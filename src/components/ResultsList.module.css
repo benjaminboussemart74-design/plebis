@@ -1,0 +1,75 @@
+.wrapper {
+  max-width: 900px;
+  margin: var(--space-6) auto var(--space-16);
+  padding: 0 var(--space-6);
+}
+
+.count {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  margin-bottom: var(--space-4);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── États ── */
+
+.stateWrapper {
+  max-width: 900px;
+  margin: var(--space-16) auto;
+  padding: 0 var(--space-6);
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+}
+
+.emptyTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.emptyText {
+  font-size: var(--font-size-base);
+  color: var(--color-muted);
+}
+
+/* ── Squelettes de chargement ── */
+
+.loadingGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.skeleton {
+  height: 88px;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 25%,
+    #ebe8e3 50%,
+    var(--color-border) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-lg);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.loadingText {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}

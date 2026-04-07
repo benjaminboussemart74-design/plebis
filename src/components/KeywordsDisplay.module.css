@@ -1,0 +1,26 @@
+.wrapper {
+  max-width: 900px;
+  margin: var(--space-4) auto 0;
+  padding: 0 var(--space-6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.keyword {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted);
+  background: var(--color-border);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
