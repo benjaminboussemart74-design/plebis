@@ -7,6 +7,14 @@ L'utilisateur saisit un sujet → l'IA génère des mots-clés → Supabase reto
 
 ---
 
+## Dépôt GitHub
+
+https://github.com/benjaminboussemart74-design/plebis
+
+> Le fichier `.env` est exclu du dépôt (`.gitignore`). Ne jamais le committer.
+
+---
+
 ## Stack technique
 
 | Couche | Outil |
