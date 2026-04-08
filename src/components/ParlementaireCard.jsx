@@ -2,19 +2,12 @@ import styles from './ParlementaireCard.module.css'
 
 const CHAMBRE_LABEL = { AN: 'Assemblée nationale', Senat: 'Sénat' }
 
-const PROXY = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/an-proxy`
-
-function photoProxyUrl(id) {
-  return id ? `${PROXY}?type=photo&id=${id}` : null
-}
-
 export default function ParlementaireCard({ parlementaire, rank, onClick }) {
   const {
-    id, nom, prenom, chambre, groupe_sigle, groupe_libelle,
-    couleur_groupe, circonscription, score, scorePct,
+    nom, prenom, chambre, groupe_sigle, groupe_libelle,
+    couleur_groupe, circonscription, score, scorePct, photo_url,
   } = parlementaire
 
-  const proxiedPhoto = photoProxyUrl(id)
   const initials = `${prenom?.[0] ?? ''}${nom?.[0] ?? ''}`.toUpperCase()
 
   return (
@@ -22,17 +15,16 @@ export default function ParlementaireCard({ parlementaire, rank, onClick }) {
       <div className={styles.rank}>#{rank}</div>
 
       <div className={styles.avatar}>
-        {proxiedPhoto ? (
+        {photo_url ? (
           <img
-            src={proxiedPhoto}
+            src={photo_url}
             alt={`${prenom} ${nom}`}
-            crossOrigin="anonymous"
             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
           />
         ) : null}
         <div
           className={styles.initials}
-          style={{ display: proxiedPhoto ? 'none' : 'flex', background: couleur_groupe ?? '#888' }}
+          style={{ display: photo_url ? 'none' : 'flex', background: couleur_groupe ?? '#888' }}
         >
           {initials}
         </div>
@@ -65,7 +57,7 @@ export default function ParlementaireCard({ parlementaire, rank, onClick }) {
             />
           </div>
           <span className={styles.scoreValue}>
-            {score} amendement{score > 1 ? 's' : ''}
+            {score} action{score > 1 ? 's' : ''}
           </span>
         </div>
       </div>

@@ -12,9 +12,8 @@
   right: 0;
   bottom: 0;
   width: min(520px, 100vw);
-  background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  background: var(--color-bg-card);
+  border-left: var(--border-medium);
   z-index: 101;
   display: flex;
   flex-direction: column;
@@ -27,7 +26,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-card);
   gap: var(--space-3);
   flex-shrink: 0;
 }
@@ -40,20 +40,25 @@
 }
 
 .deputeNom {
-  font-size: var(--font-size-lg);
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .badge {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: #fff;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
+  padding: 2px 6px;
+  border-radius: 2px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -62,20 +67,25 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: var(--font-size-lg);
-  color: var(--color-muted);
+  font-size: 18px;
+  color: var(--color-text-muted);
   padding: var(--space-1);
   line-height: 1;
   flex-shrink: 0;
   transition: color var(--transition-fast);
 }
-.close:hover { color: var(--color-text); }
+.close:hover { color: var(--color-text-primary); }
 
 .count {
-  padding: var(--space-3) var(--space-5);
-  font-size: var(--font-size-sm);
-  color: var(--color-muted);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-5);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-sidebar);
   flex-shrink: 0;
 }
 
@@ -89,10 +99,10 @@
 
 .item {
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-light);
   transition: background var(--transition-fast);
 }
-.item:hover { background: var(--color-bg); }
+.item:hover { background: var(--color-bg-hover); }
 
 .itemHeader {
   display: flex;
@@ -103,9 +113,10 @@
 }
 
 .titre {
-  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
 }
@@ -118,24 +129,29 @@
 }
 
 .sort {
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 10px;
   font-weight: 600;
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 2px;
 }
-.adopte { background: #d1fae5; color: #065f46; }
-.rejete { background: #fee2e2; color: #991b1b; }
-.retire { background: #fef3c7; color: #92400e; }
-.tombe  { background: #f3f4f6; color: #6b7280; }
+.adopte { background: #d1fae5; color: var(--color-status-active); }
+.rejete { background: var(--color-editorial-light); color: var(--color-editorial); }
+.retire { background: #fef3c7; color: var(--color-status-pending); }
+.tombe  { background: var(--color-bg-sidebar); color: var(--color-status-archived); }
 
 .date {
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 .link {
-  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-accent);
   text-decoration: none;
@@ -152,15 +168,16 @@
 }
 
 .sectionLabel {
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-muted);
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
 }
 
 .texteRef {
-  font-size: var(--font-size-xs);
+  font-size: 12px;
   margin-bottom: var(--space-2);
 }
 
@@ -172,17 +189,18 @@
 .texteLink:hover { text-decoration: underline; }
 
 .texteNom {
-  color: var(--color-muted);
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
 .divisionTitre {
-  color: var(--color-muted);
+  color: var(--color-text-muted);
 }
 
 .objet {
-  font-size: var(--font-size-sm);
-  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-secondary);
   line-height: 1.6;
   margin: 0;
 }

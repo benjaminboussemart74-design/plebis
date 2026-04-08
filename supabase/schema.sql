@@ -57,15 +57,43 @@ CREATE INDEX IF NOT EXISTS idx_parlementaires_orientation
 CREATE INDEX IF NOT EXISTS idx_parlementaires_chambre
   ON parlementaires(chambre);
 
+-- Table questions_ecrites (phase 2 : AN 17e législature)
+CREATE TABLE IF NOT EXISTS questions_ecrites (
+  id TEXT PRIMARY KEY,
+  parlementaire_id TEXT REFERENCES parlementaires(id) ON DELETE CASCADE,
+  rubrique TEXT,
+  tete_analyse TEXT,
+  texte_question TEXT,
+  ministere TEXT,
+  date_depot DATE,
+  legislature INT DEFAULT 17,
+  texte_recherche TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('french',
+      COALESCE(rubrique, '') || ' ' ||
+      COALESCE(tete_analyse, '') || ' ' ||
+      COALESCE(texte_question, '')
+    )
+  ) STORED
+);
+
+CREATE INDEX IF NOT EXISTS idx_questions_fts
+  ON questions_ecrites USING GIN(texte_recherche);
+
+CREATE INDEX IF NOT EXISTS idx_questions_trgm_rubrique
+  ON questions_ecrites USING GIN(rubrique gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_questions_parlementaire
+  ON questions_ecrites(parlementaire_id);
+
 -- Fonction utilitaire : vide toutes les tables (appelée depuis ingest.js via RPC)
 CREATE OR REPLACE FUNCTION truncate_all()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  TRUNCATE TABLE amendements, parlementaires RESTART IDENTITY CASCADE;
+  TRUNCATE TABLE questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
 END;
 $$;
 
--- Fonction de recherche principale
+-- Fonction de recherche principale (score = amendements + questions écrites)
 CREATE OR REPLACE FUNCTION search_parlementaires(
   keywords TEXT[],
   orientation_filter TEXT DEFAULT NULL,
@@ -87,39 +115,40 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT
-    p.id,
-    p.nom,
-    p.prenom,
-    p.chambre,
-    p.groupe_sigle,
-    p.groupe_libelle,
-    p.orientation,
-    p.couleur_groupe,
-    p.circonscription,
-    p.photo_url,
-    COUNT(a.id) AS score
-  FROM parlementaires p
-  JOIN amendements a ON a.parlementaire_id = p.id
-  WHERE
-    (orientation_filter IS NULL OR p.orientation = orientation_filter)
-    AND (chambre_filter IS NULL OR p.chambre = chambre_filter)
-    AND (
-      a.texte_recherche @@ (
-        SELECT ts_query
-        FROM (
-          SELECT to_tsquery('french', string_agg(keyword, ' | '))
-          FROM unnest(keywords) AS keyword
-        ) sub(ts_query)
-      )
+  WITH ts AS (
+    SELECT to_tsquery('french', string_agg(keyword, ' | ')) AS ts_query
+    FROM unnest(keywords) AS keyword
+  ),
+  scores_amend AS (
+    SELECT a.parlementaire_id, COUNT(a.id) AS cnt
+    FROM amendements a, ts
+    WHERE
+      a.texte_recherche @@ ts.ts_query
+      OR EXISTS (SELECT 1 FROM unnest(keywords) AS kw WHERE a.objet ILIKE '%' || kw || '%')
+    GROUP BY a.parlementaire_id
+  ),
+  scores_questions AS (
+    SELECT q.parlementaire_id, COUNT(q.id) AS cnt
+    FROM questions_ecrites q, ts
+    WHERE
+      q.texte_recherche @@ ts.ts_query
       OR EXISTS (
         SELECT 1 FROM unnest(keywords) AS kw
-        WHERE a.objet ILIKE '%' || kw || '%'
+        WHERE q.rubrique ILIKE '%' || kw || '%' OR q.tete_analyse ILIKE '%' || kw || '%'
       )
-    )
-  GROUP BY p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle,
-           p.groupe_libelle, p.orientation, p.couleur_groupe,
-           p.circonscription, p.photo_url
+    GROUP BY q.parlementaire_id
+  )
+  SELECT
+    p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle, p.groupe_libelle,
+    p.orientation, p.couleur_groupe, p.circonscription, p.photo_url,
+    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) AS score
+  FROM parlementaires p
+  LEFT JOIN scores_amend sa ON sa.parlementaire_id = p.id
+  LEFT JOIN scores_questions sq ON sq.parlementaire_id = p.id
+  WHERE
+    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0)) > 0
+    AND (orientation_filter IS NULL OR p.orientation = orientation_filter)
+    AND (chambre_filter IS NULL OR p.chambre = chambre_filter)
   ORDER BY score DESC
   LIMIT 50;
 $$;

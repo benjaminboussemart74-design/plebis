@@ -1,63 +1,97 @@
 /* ============================================================
-   Plébis — Design tokens
+   Plébis — Design tokens (charte La Rumeur Publique v1.0)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* ── Couleurs principales ── */
-  --color-accent:    #E63329;   /* rouge Plébis */
-  --color-bg:        #F9F7F4;   /* fond crème chaud */
-  --color-surface:   #FFFFFF;
-  --color-border:    #E4E1DC;
-  --color-text:      #1A1714;
-  --color-muted:     #6B6560;
-
-  /* ── Couleurs partisanes (groupes AN 17e) ── */
-  --color-rn:        #0A1833;
-  --color-lr:        #1B3A6B;
-  --color-udr:       #2C3E50;
-  --color-epr:       #FFBE00;
-  --color-modem:     #FF6600;
-  --color-hor:       #3B82F6;
-  --color-liot:      #888888;
-  --color-soc:       #E75480;
-  --color-ecos:      #2ECC40;
-  --color-gdr:       #CC0000;
-  --color-lfi:       #FF3300;
-
   /* ── Typographie ── */
-  --font-display:    'Playfair Display', Georgia, serif;
-  --font-body:       'Inter', system-ui, sans-serif;
-  --font-size-xs:    0.75rem;
-  --font-size-sm:    0.875rem;
-  --font-size-base:  1rem;
-  --font-size-lg:    1.125rem;
-  --font-size-xl:    1.25rem;
-  --font-size-2xl:   1.5rem;
-  --font-size-3xl:   2rem;
-  --font-size-4xl:   2.5rem;
+  --font-serif:   'Source Serif 4', Georgia, serif;
+  --font-sans:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* Alias de compatibilité */
+  --font-display: var(--font-serif);
+  --font-body:    var(--font-sans);
+
+  /* ── Fonds ── */
+  --color-bg:         #FAFAF8;  /* Fond principal */
+  --color-bg-card:    #FFFFFF;  /* Cartes, header */
+  --color-bg-sidebar: #F2F2EE;  /* Panneau contrôles */
+  --color-bg-hover:   #EEEEE9;  /* Hover éléments interactifs */
+
+  /* Alias de compatibilité */
+  --color-surface: var(--color-bg-card);
+
+  /* ── Textes ── */
+  --color-text-primary:   #1A1A1A;
+  --color-text-secondary: #595959;
+  --color-text-muted:     #9A9A92;
+
+  /* Alias de compatibilité */
+  --color-text:  var(--color-text-primary);
+  --color-muted: var(--color-text-muted);
+
+  /* ── Accents ── */
+  --color-accent:          #1B3F7B;  /* Boutons primaires, liens, actifs */
+  --color-accent-hover:    #15336A;
+  --color-accent-light:    #EEF2FA;  /* Fond états sélectionnés */
+  --color-editorial:       #B01E28;  /* Filet header, marque, alertes */
+  --color-editorial-light: #FAF0F1;  /* Fond messages d'erreur */
+  --color-dark:            #0A1E5C;  /* Fond sombre contrastes élevés */
+
+  /* ── Couleurs sémantiques institutionnelles ── */
+  --color-status-active:   #1A7A4C;  /* Textes adoptés */
+  --color-status-pending:  #C27F20;  /* En cours d'examen */
+  --color-status-archived: #6B6B63;  /* Textes retirés */
+
+  /* ── Couleurs partisanes (échiquier AN 17e) ── */
+  --color-rn:    #0A1833;  /* RN — extrême droite */
+  --color-lr:    #1B3A6B;  /* LR — droite républicaine */
+  --color-udr:   #2C3E50;  /* UDR */
+  --color-epr:   #3366CC;  /* Renaissance / EPR */
+  --color-modem: #FF8C42;  /* MoDem */
+  --color-hor:   #3366CC;  /* Horizons */
+  --color-liot:  #6B6B63;  /* LIOT */
+  --color-soc:   #ED6F8B;  /* PS / Socialistes */
+  --color-ecos:  #00A86B;  /* Écologistes / EELV */
+  --color-gdr:   #E8333A;  /* GDR */
+  --color-lfi:   #E8333A;  /* LFI */
+
+  /* ── Bordures ── */
+  --border-light:    1px solid #DDDDD6;
+  --border-medium:   1px solid #B8B8B0;
+  --border-strong:   1px solid #2B2B2B;
+  --border-editorial: 3px solid #B01E28;
+
+  /* Alias de compatibilité */
+  --color-border: #DDDDD6;
+
+  /* ── Border-radius ── */
+  --radius-btn:  2px;  /* Boutons */
+  --radius-card: 0;    /* Cartes et conteneurs */
+  --radius-full: 9999px; /* Avatars uniquement */
+
+  /* Alias de compatibilité (redirigés vers les valeurs chartes) */
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 0px;
+
+  /* ── Ombres (aucune dans le système) ── */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
 
   /* ── Espacements ── */
   --space-1:  0.25rem;
   --space-2:  0.5rem;
   --space-3:  0.75rem;
   --space-4:  1rem;
+  --space-5:  1.25rem;
   --space-6:  1.5rem;
   --space-8:  2rem;
   --space-12: 3rem;
   --space-16: 4rem;
-
-  /* ── Rayons ── */
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-full: 9999px;
-
-  /* ── Ombres ── */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg:  0 8px 24px rgba(0,0,0,0.1),  0 4px 8px rgba(0,0,0,0.04);
 
   /* ── Transitions ── */
   --transition-fast:   150ms ease;
@@ -68,9 +102,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-primary);
   background: var(--color-bg);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -79,3 +113,8 @@ body {
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
 button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #B8B8B0; border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }

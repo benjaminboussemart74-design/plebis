@@ -60,7 +60,9 @@ export default function App() {
         {error && (
           <div style={{
             maxWidth: 900, margin: '1rem auto 0', padding: '0 1.5rem',
-            color: 'var(--color-accent)', fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-editorial)', fontSize: '13px',
+            background: 'var(--color-editorial-light)', border: 'var(--border-light)',
+            borderLeft: '3px solid var(--color-editorial)',
           }}>
             {error}
           </div>

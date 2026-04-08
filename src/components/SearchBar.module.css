@@ -11,13 +11,13 @@
 
 .input {
   flex: 1;
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 7px var(--space-4);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  border: var(--border-light);
+  border-radius: var(--radius-btn);
   transition: border-color var(--transition-fast);
   outline: none;
 }
@@ -27,7 +27,7 @@
 }
 
 .input::placeholder {
-  color: var(--color-muted);
+  color: var(--color-text-muted);
 }
 
 .input:disabled {
@@ -35,13 +35,13 @@
 }
 
 .button {
-  padding: var(--space-3) var(--space-6);
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   font-weight: 600;
-  color: #fff;
+  color: #FFFFFF;
   background: var(--color-accent);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-btn);
   transition: background var(--transition-fast), opacity var(--transition-fast);
   white-space: nowrap;
   display: flex;
@@ -51,7 +51,7 @@
 }
 
 .button:hover:not(:disabled) {
-  background: #c72a21;
+  background: var(--color-accent-hover);
 }
 
 .button:disabled {
@@ -60,8 +60,8 @@
 
 .spinner {
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border: 2px solid rgba(255,255,255,0.4);
   border-top-color: #fff;
   border-radius: var(--radius-full);
@@ -80,13 +80,14 @@
 
 .select {
   flex: 1;
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 5px var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: var(--border-light);
+  border-radius: var(--radius-btn);
   cursor: pointer;
   outline: none;
   transition: border-color var(--transition-fast);
@@ -94,6 +95,10 @@
 
 .select:focus {
   border-color: var(--color-accent);
+}
+
+.select:hover {
+  border-color: #B8B8B0;
 }
 
 .select:disabled {

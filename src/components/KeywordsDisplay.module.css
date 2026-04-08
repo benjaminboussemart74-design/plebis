@@ -9,18 +9,22 @@
 }
 
 .label {
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   white-space: nowrap;
 }
 
 .keyword {
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
-  background: var(--color-border);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sidebar);
+  border: var(--border-light);
+  padding: 2px 8px;
+  border-radius: 2px;
 }

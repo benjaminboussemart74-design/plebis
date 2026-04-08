@@ -1,5 +1,14 @@
 # Plébis — CLAUDE.md
 
+## Charte graphique
+
+**Référence obligatoire pour toute implémentation UI : [`DESIGN.md`](./DESIGN.md)**
+
+Avant tout travail sur le frontend (composants, CSS, layout), lire `DESIGN.md`.
+Il contient : typographie, palette, espacements, composants, et principes éditoriaux.
+
+---
+
 ## Objectif
 
 Moteur de recherche des parlementaires français actifs sur une thématique donnée.
