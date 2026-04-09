@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import styles from './AmendementPanel.module.css'
+import { getGroupeLogo } from '../lib/groupeLogos'
 
 const SORT_LABEL = {
   'Adopté':      { label: 'Adopté',       cls: 'adopte' },
@@ -136,6 +137,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
   if (!parlementaire) return null
 
   const { prenom, nom, groupe_sigle, groupe_libelle, couleur_groupe } = parlementaire
+  const groupeLogo = getGroupeLogo(groupe_sigle)
   const qe = questionsEcrites ?? []
   const iv = interventions ?? []
 
@@ -146,13 +148,22 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
         <div className={styles.header}>
           <div className={styles.headerInfo}>
             <span className={styles.deputeNom}>{prenom} {nom}</span>
-            <span
-              className={styles.badge}
-              style={{ background: couleur_groupe ?? '#888' }}
-              title={groupe_libelle}
-            >
-              {groupe_sigle}
-            </span>
+            {groupeLogo ? (
+              <img
+                src={groupeLogo}
+                alt={groupe_sigle}
+                className={styles.badgeLogo}
+                title={groupe_libelle}
+              />
+            ) : (
+              <span
+                className={styles.badge}
+                style={{ background: couleur_groupe ?? '#888' }}
+                title={groupe_libelle}
+              >
+                {groupe_sigle}
+              </span>
+            )}
           </div>
           <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
         </div>

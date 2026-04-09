@@ -129,32 +129,29 @@ RETURNS TABLE (
   couleur_groupe TEXT,
   circonscription TEXT,
   photo_url TEXT,
-  score BIGINT
+  score BIGINT,
+  amendements_count BIGINT,
+  questions_count BIGINT,
+  interventions_count BIGINT
 )
 LANGUAGE sql
 STABLE
 AS $$
   WITH ts AS (
-    SELECT to_tsquery('french', string_agg(keyword, ' | ')) AS ts_query
-    FROM unnest(keywords) AS keyword
+    SELECT string_agg(plainto_tsquery('french', kw)::text, ' | ')::tsquery AS ts_query
+    FROM unnest(keywords) AS kw
+    WHERE trim(kw) != ''
   ),
   scores_amend AS (
     SELECT a.parlementaire_id, COUNT(a.id) AS cnt
     FROM amendements a, ts
-    WHERE
-      a.texte_recherche @@ ts.ts_query
-      OR EXISTS (SELECT 1 FROM unnest(keywords) AS kw WHERE a.objet ILIKE '%' || kw || '%')
+    WHERE a.texte_recherche @@ ts.ts_query
     GROUP BY a.parlementaire_id
   ),
   scores_questions AS (
     SELECT q.parlementaire_id, COUNT(q.id) AS cnt
     FROM questions_ecrites q, ts
-    WHERE
-      q.texte_recherche @@ ts.ts_query
-      OR EXISTS (
-        SELECT 1 FROM unnest(keywords) AS kw
-        WHERE q.rubrique ILIKE '%' || kw || '%' OR q.tete_analyse ILIKE '%' || kw || '%'
-      )
+    WHERE q.texte_recherche @@ ts.ts_query
     GROUP BY q.parlementaire_id
   ),
   scores_interventions AS (
@@ -166,7 +163,10 @@ AS $$
   SELECT
     p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle, p.groupe_libelle,
     p.orientation, p.couleur_groupe, p.circonscription, p.photo_url,
-    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) AS score
+    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) AS score,
+    COALESCE(sa.cnt, 0) AS amendements_count,
+    COALESCE(sq.cnt, 0) AS questions_count,
+    COALESCE(si.cnt, 0) AS interventions_count
   FROM parlementaires p
   LEFT JOIN scores_amend sa ON sa.parlementaire_id = p.id
   LEFT JOIN scores_questions sq ON sq.parlementaire_id = p.id

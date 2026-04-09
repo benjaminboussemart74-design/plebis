@@ -86,6 +86,15 @@
   flex-shrink: 0;
 }
 
+.groupeLogo {
+  height: 28px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
 .meta {
   font-family: var(--font-sans);
   font-size: 12px;

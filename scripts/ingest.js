@@ -203,7 +203,7 @@ async function parseDeputes(tmpPath) {
       orientation: getOrientation(groupeSigle),
       couleur_groupe: getCouleur(groupeSigle),
       circonscription: circo,
-      photo_url: `https://www.nosdeputes.fr/depute/photo/${slugify(prenom)}-${slugify(nom)}/120`,
+      photo_url: `https://mncyqaovonldvfzqmric.supabase.co/functions/v1/an-proxy?type=photo&id=${id}`,
     })
   }
 

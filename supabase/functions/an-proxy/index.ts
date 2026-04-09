@@ -17,22 +17,28 @@ serve(async (req) => {
   const ref = url.searchParams.get('ref')
 
   try {
-    if (type === 'photo' && id) {
-      const upstream = await fetch(
-        `https://www.assemblee-nationale.fr/dyn/static/tribun/${id}/photo`,
-        { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'image/*,*/*' } }
-      )
+    if (type === 'photo' && (id || url.searchParams.get('slug'))) {
+      const slug = url.searchParams.get('slug')
+      const photoUrl = slug
+        ? `https://www.nosdeputes.fr/depute/photo/${slug}/120`
+        : `https://www.assemblee-nationale.fr/dyn/static/tribun/${id}/photo`
+      const upstream = await fetch(photoUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'image/*,*/*' },
+        redirect: 'follow',
+      })
       if (!upstream.ok) {
         return new Response(null, { status: upstream.status, headers: CORS })
       }
+      const contentType = upstream.headers.get('content-type') ?? ''
+      if (!contentType.startsWith('image/')) {
+        return new Response(null, { status: 404, headers: CORS })
+      }
       const body = await upstream.arrayBuffer()
-      const contentType = upstream.headers.get('content-type') ?? 'image/jpeg'
-      // Ne pas retransmettre Set-Cookie (Cloudflare __cf_bm) pour éviter les rejets navigateur
       return new Response(body, {
         status: 200,
         headers: {
           ...CORS,
-          'Content-Type': contentType,
+          'Content-Type': upstream.headers.get('content-type') ?? 'image/jpeg',
           'Cache-Control': 'public, max-age=86400',
           'Cross-Origin-Resource-Policy': 'cross-origin',
         },

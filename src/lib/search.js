@@ -131,6 +131,7 @@ export async function searchParlementaires({ query, orientation, chambre }) {
       score: Number(r.score),
       amendements_count: Number(r.amendements_count ?? 0),
       questions_count: Number(r.questions_count ?? 0),
+      interventions_count: Number(r.interventions_count ?? 0),
       scorePct: maxScore > 0 ? Math.round((Number(r.score) / maxScore) * 100) : 0,
     })),
   }

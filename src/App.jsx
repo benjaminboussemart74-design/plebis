@@ -10,6 +10,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [results, setResults] = useState([])
+  const [groupStats, setGroupStats] = useState([])
   const [keywords, setKeywords] = useState([])
   const [lastQuery, setLastQuery] = useState('')
   const [error, setError] = useState(null)
@@ -31,10 +32,30 @@ export default function App() {
       setKeywords(kws)
       setResults(res)
       setSearched(true)
+
+      const totalScore = res.reduce((sum, p) => sum + (p.score ?? 0), 0)
+      const grouped = res.reduce((acc, p) => {
+        const key = p.groupe_sigle
+        if (!acc[key]) {
+          acc[key] = { sigle: p.groupe_sigle, libelle: p.groupe_libelle, couleur: p.couleur_groupe, totalScore: 0, count: 0 }
+        }
+        acc[key].totalScore += p.score ?? 0
+        acc[key].count += 1
+        return acc
+      }, {})
+      const groupStats = Object.values(grouped)
+        .map(g => ({
+          ...g,
+          avgScore: Math.round(g.totalScore / g.count),
+          pct: totalScore > 0 ? Math.round((g.totalScore / totalScore) * 100) : 0,
+        }))
+        .sort((a, b) => b.totalScore - a.totalScore)
+      setGroupStats(groupStats)
     } catch (err) {
       setError(err.message ?? 'Une erreur est survenue.')
       setResults([])
       setKeywords([])
+      setGroupStats([])
     } finally {
       setLoading(false)
     }
@@ -84,6 +105,7 @@ export default function App() {
         )}
         <ResultsList
           results={results}
+          groupStats={groupStats}
           loading={loading}
           searched={searched}
           onSelectParlementaire={handleSelectParlementaire}

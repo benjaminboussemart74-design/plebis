@@ -63,6 +63,15 @@
   flex-shrink: 0;
 }
 
+.badgeLogo {
+  height: 30px;
+  width: auto;
+  max-width: 90px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
 .close {
   background: none;
   border: none;
