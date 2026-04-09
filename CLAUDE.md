@@ -134,7 +134,7 @@ parlsearch/
 **`interventions`** : id (`{seanceUid}__{acteurId}___{index}`), parlementaire_id (FK), date_seance, point_titre, texte, texte_recherche (TSVECTOR sur texte)
 
 ### Fonctions RPC
-- `search_parlementaires(keywords TEXT[], orientation_filter TEXT, chambre_filter TEXT)` → parlementaires + `score` (somme amendements + questions + interventions matchés)
+- `search_parlementaires(keywords TEXT[], orientation_filter TEXT, chambre_filter TEXT)` → parlementaires + `score` (somme amendements + questions + interventions matchés). **SECURITY DEFINER** + `SET statement_timeout TO '30s'` + `SET max_parallel_workers_per_gather TO '2'` — scan exhaustif des 3 tables, contourne le timeout de la clé anon.
 - `truncate_all()` → TRUNCATE des 4 tables en cascade (interventions, questions_ecrites, amendements, parlementaires)
 
 ### Indexes
@@ -167,8 +167,11 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 5. **Proxy CORS `an-proxy`** : Edge Function servant de proxy pour les photos AN/nosdeputes.fr (`?type=photo&id=PA…` ou `?type=photo&slug=prenom-nom`) et les métadonnées opendata (`?type=opendata&ref=…`). Évite les blocages CORS côté frontend.
 6. **Panneau détail** : clic sur une carte → `AmendementPanel` (slide-in droite). Charge en parallèle amendements + questions + interventions du député filtrés par les mots-clés. 3 onglets. Fermeture par clic backdrop ou Échap.
 7. **Titres des textes en live** : fetché via `an-proxy` (`?type=opendata&ref=…`) à l'ouverture du panneau, mis en cache global (Map) pour éviter les appels dupliqués.
-8. **Logos groupes** : `groupeLogos.js` mappe les sigles (SER, RN, EPR…) vers des PNG importés depuis `src/assets/Logos/`. Affichés dans le panneau latéral.
+8. **Logos groupes** : `groupeLogos.js` mappe les sigles vers des PNG depuis `src/assets/Logos/`. Groupes couverts : LFI-NFP, SOC, EcoS, LIOT, EPR, HOR, LR, RN, UDR, DR, Dem. Fallback initiales colorées pour GDR et NI.
 9. **Nettoyage base** : `TRUNCATE CASCADE` via RPC `truncate_all()` — le DELETE `.neq('id','')` timeout sur 100k+ rows.
+10. **Modale compte rendu de séance** : bouton "Compte rendu" dans l'onglet Séance du panneau → fetch toutes les interventions du même `seanceUid` via plage `gte`/`lt` (`.gte('id', seanceUid + '__').lt('id', seanceUid + '~')`). NE PAS utiliser `.like()` : Supabase encode `%` en `%25` dans l'URL et PostgREST ne le reconnaît plus comme wildcard LIKE. L'intervention du député est surlignée et scrollée en vue.
+11. **Modale question écrite** : bouton "Lire" → affiche le texte complet déjà chargé (pas de fetch supplémentaire). Le lien "AN ↗" est conservé en parallèle.
+12. **Limites fetch panel** : `fetchAmendements`, `fetchQuestionsEcrites`, `fetchInterventions` sont plafonnées à 500 résultats (au lieu de 50/100) pour aligner les compteurs carte ↔ panneau.
 
 ---
 
@@ -191,10 +194,13 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 - [x] App.jsx : gestion des 3 sources (amendements, questions, interventions) en parallèle
 - [x] Panneau détail (AmendementPanel) : 3 onglets — Amendements, Questions écrites, Séance
 - [x] Scoring RPC agrège amendements + questions + interventions
-- [x] Logos groupes (PNG) + fallback initiales colorées
+- [x] Logos groupes (PNG) + fallback initiales colorées — tous les groupes AN 17e couverts (DR et Dem ajoutés)
+- [x] Modale compte rendu de séance (onglet Séance) — fetch complet du seanceUid, surlignage + scroll auto
+- [x] Modale question écrite complète (onglet Questions) — texte intégral + lien AN ↗
+- [x] RPC `search_parlementaires` : SECURITY DEFINER + timeout 30s + scan exhaustif (plus de LIMIT intermédiaire)
+- [x] Limites fetch panel corrigées : 500 pour amendements, questions et interventions
 
 ### Reste à faire ⏳
-- [ ] Tester `npm run dev` et valider une recherche de bout en bout
 - [ ] Déploiement Vercel (frontend)
 - [ ] Phase 3 : données Sénat
 
@@ -212,5 +218,6 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 - Les amendements AN n'ont pas de champ `titre` — afficher le numéro extrait de l'ID (`N001852` → `n°1852`).
 - Le format date syceron (comptes rendus) est `"20241106140000000"` — ne pas utiliser `new Date()` directement, extraire par slices de chaîne.
 - Les interventions syceron sont dans `compteRendu.contenu.point[].paragraphe[]` avec l'attribut `@_id_acteur` (ou `@_id_acteur` selon le niveau de nesting). Les textes peuvent être des tableaux ou des chaînes.
-- L'ID d'une intervention est construit comme `{seanceUid}__{acteurId}___{index}` — le `seanceUrl()` extrait le préfixe avant `__` pour construire le lien vers le compte rendu.
+- L'ID d'une intervention est construit comme `{seanceUid}__{acteurId}___{index}` — le préfixe avant `__` est le `seanceUid`. Pour fetcher toutes les interventions d'une séance : `.gte('id', seanceUid + '__').lt('id', seanceUid + '~')`. Ne jamais utiliser `.like()` (le `%` est mal encodé par le client Supabase JS).
 - `upload-photos.js` crée le bucket `photos` si absent, puis upload les images et met `photo_url` à jour avec l'URL publique Supabase Storage.
+- **17 230 amendements (17%) ont `objet` et `expose_motifs` NULL** : ce sont des amendements budgétaires (ÉTAT B crédits) ou de suppression sans corps textuel dans le flux opendata AN. FTS ne peut pas les matcher. Limitation source, non récupérable sans appel API externe par amendement.

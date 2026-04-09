@@ -112,8 +112,9 @@ END;
 $$;
 
 -- Fonction de recherche principale (score = amendements + questions écrites + interventions)
-DROP FUNCTION IF EXISTS search_parlementaires(text[], text, text);
-CREATE FUNCTION search_parlementaires(
+-- SECURITY DEFINER + SET statement_timeout : contourne le timeout de la clé anon (3-8s)
+-- Résultats exhaustifs : aucun LIMIT sur les scans FTS, scan complet des 3 tables
+CREATE OR REPLACE FUNCTION search_parlementaires(
   keywords TEXT[],
   orientation_filter TEXT DEFAULT NULL,
   chambre_filter TEXT DEFAULT NULL
@@ -134,8 +135,9 @@ RETURNS TABLE (
   questions_count BIGINT,
   interventions_count BIGINT
 )
-LANGUAGE sql
-STABLE
+LANGUAGE sql STABLE SECURITY DEFINER
+SET statement_timeout TO '30s'
+SET max_parallel_workers_per_gather TO '2'
 AS $$
   WITH ts AS (
     SELECT string_agg(plainto_tsquery('french', kw)::text, ' | ')::tsquery AS ts_query

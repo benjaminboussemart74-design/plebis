@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './AmendementPanel.module.css'
 import { getGroupeLogo } from '../lib/groupeLogos'
+import { supabase } from '../lib/supabase'
 
 const SORT_LABEL = {
   'Adopté':      { label: 'Adopté',       cls: 'adopte' },
@@ -52,15 +53,6 @@ function texteUrl(ref) {
   return num ? `https://www.assemblee-nationale.fr/dyn/17/textes/${num}` : null
 }
 
-function questionUrl(id) {
-  return id ? `https://www.assemblee-nationale.fr/dyn/17/questions/${id}` : null
-}
-
-function seanceUrl(interventionId) {
-  const seanceUid = interventionId?.split('__')[0]
-  return seanceUid ? `https://www.assemblee-nationale.fr/dyn/opendata/${seanceUid}.html` : null
-}
-
 function formatDate(d) {
   if (!d) return null
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -100,39 +92,90 @@ function excerptAround(text, keywords, maxLen = 400) {
 
 export default function AmendementPanel({ parlementaire, amendements, questionsEcrites, interventions, keywords, loading, onClose }) {
   const [activeTab, setActiveTab] = useState('amendements')
-  const [texteMetas, setTexteMetas] = useState({}) // ref → { titre, denomination }
+  const [texteMetas, setTexteMetas] = useState({})
+
+  // État de la modale compte rendu / question
+  // null | { type: 'seance', interventionId, seanceUid, date_seance, point_titre }
+  //       | { type: 'question', question }
+  const [modal, setModal] = useState(null)
+  const [modalLoading, setModalLoading] = useState(false)
+  const [modalItems, setModalItems] = useState([])
+  const [modalError, setModalError] = useState(null)
+  const highlightRef = useRef(null)
+  const modalRef = useRef(null) // pour le scroll auto après chargement
+
+  // Ref synchronisé pour l'état modal (utilisé dans le handler Escape)
+  const modalStateRef = useRef(null)
+  useEffect(() => { modalStateRef.current = modal }, [modal])
 
   // Reset tab when parlementaire changes
   useEffect(() => {
     setActiveTab('amendements')
+    setModal(null)
   }, [parlementaire?.id])
 
-  // Fermeture par Échap
+  // Fermeture par Échap : modale d'abord, puis panneau
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        if (modalStateRef.current) { closeModal(); return }
+        onClose()
+      }
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  // Scroll vers l'intervention surlignée après chargement
+  useEffect(() => {
+    if (!modalLoading && modalItems.length && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'instant', block: 'center' })
+    }
+  }, [modalLoading, modalItems])
 
   // Fetch les titres des textes législatifs uniques
   useEffect(() => {
     if (!amendements.length) return
     const refs = [...new Set(amendements.map(a => a.texte_legis_ref).filter(Boolean))]
     let cancelled = false
-
-    Promise.all(
-      refs.map(async ref => {
-        const meta = await fetchTexteMeta(ref)
-        return [ref, meta]
-      })
-    ).then(entries => {
-      if (!cancelled) {
-        setTexteMetas(Object.fromEntries(entries))
-      }
-    })
-
+    Promise.all(refs.map(async ref => [ref, await fetchTexteMeta(ref)]))
+      .then(entries => { if (!cancelled) setTexteMetas(Object.fromEntries(entries)) })
     return () => { cancelled = true }
   }, [amendements])
+
+  // ── Modale : ouvrir compte rendu de séance ──────────────
+  async function openSeanceModal(intervention) {
+    const seanceUid = intervention.id.split('__')[0]
+    setModal({ type: 'seance', interventionId: intervention.id, seanceUid, date_seance: intervention.date_seance, point_titre: intervention.point_titre })
+    setModalLoading(true)
+    setModalError(null)
+    setModalItems([])
+
+    const { data, error } = await supabase
+      .from('interventions')
+      .select('id, texte, point_titre')
+      .gte('id', `${seanceUid}__`)
+      .lt('id', `${seanceUid}~`)
+      .order('id')
+
+    setModalLoading(false)
+    if (error || !data?.length) {
+      setModalError('Aucun compte rendu trouvé pour cette séance.')
+    } else {
+      setModalItems(data)
+    }
+  }
+
+  // ── Modale : ouvrir question écrite complète ─────────────
+  function openQuestionModal(question) {
+    setModal({ type: 'question', question })
+  }
+
+  function closeModal() {
+    setModal(null)
+    setModalItems([])
+    setModalError(null)
+  }
 
   if (!parlementaire) return null
 
@@ -149,18 +192,9 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
           <div className={styles.headerInfo}>
             <span className={styles.deputeNom}>{prenom} {nom}</span>
             {groupeLogo ? (
-              <img
-                src={groupeLogo}
-                alt={groupe_sigle}
-                className={styles.badgeLogo}
-                title={groupe_libelle}
-              />
+              <img src={groupeLogo} alt={groupe_sigle} className={styles.badgeLogo} title={groupe_libelle} />
             ) : (
-              <span
-                className={styles.badge}
-                style={{ background: couleur_groupe ?? '#888' }}
-                title={groupe_libelle}
-              >
+              <span className={styles.badge} style={{ background: couleur_groupe ?? '#888' }} title={groupe_libelle}>
                 {groupe_sigle}
               </span>
             )}
@@ -170,24 +204,15 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
 
         {/* Onglets */}
         <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${activeTab === 'amendements' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('amendements')}
-          >
+          <button className={`${styles.tab} ${activeTab === 'amendements' ? styles.tabActive : ''}`} onClick={() => setActiveTab('amendements')}>
             📜 Amendements
             {!loading && <span className={styles.tabCount}>{amendements.length}</span>}
           </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'questions' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('questions')}
-          >
+          <button className={`${styles.tab} ${activeTab === 'questions' ? styles.tabActive : ''}`} onClick={() => setActiveTab('questions')}>
             ❓ Questions écrites
             {!loading && <span className={styles.tabCount}>{qe.length}</span>}
           </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'interventions' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('interventions')}
-          >
+          <button className={`${styles.tab} ${activeTab === 'interventions' ? styles.tabActive : ''}`} onClick={() => setActiveTab('interventions')}>
             🎙 Séance
             {!loading && <span className={styles.tabCount}>{iv.length}</span>}
           </button>
@@ -205,7 +230,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                 const sortInfo = SORT_LABEL[a.sort] ?? null
                 const meta = a.texte_legis_ref ? texteMetas[a.texte_legis_ref] : null
                 const url = texteUrl(a.texte_legis_ref)
-
                 return (
                   <li key={a.id} className={styles.item}>
                     <div className={styles.texteRef}>
@@ -217,34 +241,18 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                       ) : (
                         <span className={styles.texteNom}>{a.texte_legis_ref}</span>
                       )}
-                      {a.division_titre && (
-                        <span className={styles.divisionTitre}> · {a.division_titre}</span>
-                      )}
+                      {a.division_titre && <span className={styles.divisionTitre}> · {a.division_titre}</span>}
                     </div>
-
                     <div className={styles.itemHeader}>
                       <span className={styles.titre}>{amendNum(a.id)}</span>
                       <div className={styles.itemMeta}>
-                        {sortInfo && (
-                          <span className={`${styles.sort} ${styles[sortInfo.cls]}`}>
-                            {sortInfo.label}
-                          </span>
-                        )}
-                        {a.date_depot && (
-                          <span className={styles.date}>{formatDate(a.date_depot)}</span>
-                        )}
-                        <a
-                          href={anUrl(a.id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.link}
-                          title="Voir sur assemblee-nationale.fr"
-                        >
+                        {sortInfo && <span className={`${styles.sort} ${styles[sortInfo.cls]}`}>{sortInfo.label}</span>}
+                        {a.date_depot && <span className={styles.date}>{formatDate(a.date_depot)}</span>}
+                        <a href={anUrl(a.id)} target="_blank" rel="noopener noreferrer" className={styles.link} title="Voir sur assemblee-nationale.fr">
                           AN ↗
                         </a>
                       </div>
                     </div>
-
                     {a.objet && (
                       <div className={styles.section}>
                         <span className={styles.sectionLabel}>Texte amendé</span>
@@ -276,11 +284,12 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                       {q.ministere && <span className={styles.ministere}>→ {q.ministere}</span>}
                     </div>
                     <div className={styles.itemMeta}>
-                      {q.date_depot && (
-                        <span className={styles.date}>{formatDate(q.date_depot)}</span>
-                      )}
+                      {q.date_depot && <span className={styles.date}>{formatDate(q.date_depot)}</span>}
+                      <button className={styles.btnCR} onClick={() => openQuestionModal(q)}>
+                        Lire
+                      </button>
                       <a
-                        href={questionUrl(q.id)}
+                        href={`https://www.assemblee-nationale.fr/dyn/17/questions/${q.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={styles.link}
@@ -299,7 +308,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                   {q.texte_question && (
                     <div className={styles.section}>
                       <span className={styles.sectionLabel}>Question</span>
-                      <p className={styles.objet}>{highlight(q.texte_question, keywords)}</p>
+                      <p className={styles.objet}>{highlight(excerptAround(q.texte_question, keywords), keywords)}</p>
                     </div>
                   )}
                 </li>
@@ -316,33 +325,21 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                 <li key={i.id} className={styles.item}>
                   {i.point_titre && (
                     <div className={styles.texteRef}>
-                      <a href={seanceUrl(i.id)} target="_blank" rel="noopener noreferrer" className={styles.texteLink}>
-                        {i.point_titre}
-                      </a>
+                      <span className={styles.texteNom}>{i.point_titre}</span>
                     </div>
                   )}
                   <div className={styles.itemHeader}>
                     <span className={styles.titre}>{prenom} {nom}</span>
                     <div className={styles.itemMeta}>
-                      {i.date_seance && (
-                        <span className={styles.date}>{formatDate(i.date_seance)}</span>
-                      )}
-                      <a
-                        href={seanceUrl(i.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.link}
-                        title="Voir le compte rendu sur assemblee-nationale.fr"
-                      >
-                        AN ↗
-                      </a>
+                      {i.date_seance && <span className={styles.date}>{formatDate(i.date_seance)}</span>}
+                      <button className={styles.btnCR} onClick={() => openSeanceModal(i)}>
+                        Compte rendu
+                      </button>
                     </div>
                   </div>
                   {i.texte && (
                     <div className={styles.section}>
-                      <p className={styles.objet}>
-                        {highlight(excerptAround(i.texte, keywords), keywords)}
-                      </p>
+                      <p className={styles.objet}>{highlight(excerptAround(i.texte, keywords), keywords)}</p>
                     </div>
                   )}
                 </li>
@@ -351,6 +348,84 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
           </>
         )}
       </aside>
+
+      {/* ── Modale compte rendu / question complète ──────── */}
+      {modal && (
+        <>
+          <div className={styles.modalBackdrop} onClick={closeModal} />
+          <div className={styles.modal} ref={modalRef} role="dialog" aria-modal="true">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleGroup}>
+                <span className={styles.modalKind}>
+                  {modal.type === 'seance' ? 'Compte rendu de séance' : 'Question écrite'}
+                </span>
+                <span className={styles.modalTitle}>
+                  {modal.type === 'seance'
+                    ? modal.point_titre || 'Séance plénière'
+                    : modal.question.tete_analyse || modal.question.rubrique || 'Question'}
+                </span>
+                {modal.type === 'seance' && modal.date_seance && (
+                  <span className={styles.modalDate}>{formatDate(modal.date_seance)}</span>
+                )}
+                {modal.type === 'question' && modal.question.date_depot && (
+                  <span className={styles.modalDate}>{formatDate(modal.question.date_depot)}</span>
+                )}
+              </div>
+              <button className={styles.close} onClick={closeModal} aria-label="Fermer">✕</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {modal.type === 'seance' ? (
+                modalLoading ? (
+                  <div className={styles.modalEmpty}>Chargement du compte rendu…</div>
+                ) : modalError ? (
+                  <div className={styles.modalError}>{modalError}</div>
+                ) : (
+                  modalItems.map(item => {
+                    const isTarget = item.id === modal.interventionId
+                    return (
+                      <div
+                        key={item.id}
+                        ref={isTarget ? highlightRef : null}
+                        className={`${styles.seanceItem} ${isTarget ? styles.seanceItemTarget : ''}`}
+                      >
+                        {isTarget && (
+                          <span className={styles.seanceItemLabel}>Intervention de {prenom} {nom}</span>
+                        )}
+                        <p className={styles.seanceTexte}>
+                          {isTarget ? highlight(item.texte, keywords) : item.texte}
+                        </p>
+                      </div>
+                    )
+                  })
+                )
+              ) : (
+                /* Question écrite complète */
+                <div className={styles.seanceItem}>
+                  {modal.question.rubrique && (
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Rubrique</span>
+                      <p className={styles.objet}>{modal.question.rubrique}</p>
+                    </div>
+                  )}
+                  {modal.question.ministere && (
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Ministère</span>
+                      <p className={styles.objet}>{modal.question.ministere}</p>
+                    </div>
+                  )}
+                  {modal.question.texte_question && (
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Question</span>
+                      <p className={styles.objet}>{highlight(modal.question.texte_question, keywords)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }

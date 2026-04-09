@@ -302,6 +302,145 @@
   font-style: italic;
 }
 
+/* ── Bouton compte rendu / lire ────────────────────────── */
+.btnCR {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-btn);
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.btnCR:hover {
+  background: var(--color-accent);
+  color: var(--color-bg-card);
+}
+
+/* ── Modale ────────────────────────────────────────────── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(680px, 92vw);
+  max-height: 82vh;
+  background: var(--color-bg-card);
+  border: var(--border-strong);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.18s ease;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-sidebar);
+  flex-shrink: 0;
+}
+
+.modalTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.modalKind {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-editorial);
+}
+
+.modalTitle {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.modalDate {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.modalBody {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0;
+}
+
+.modalEmpty {
+  padding: var(--space-8) var(--space-5);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.modalError {
+  padding: var(--space-5);
+  margin: var(--space-5);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-editorial);
+  background: var(--color-editorial-light);
+  border-left: var(--border-editorial);
+}
+
+/* ── Paragraphes du compte rendu ───────────────────────── */
+.seanceItem {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: var(--border-light);
+}
+
+.seanceItemTarget {
+  background: var(--color-accent-light);
+  border-left: 3px solid var(--color-accent);
+  padding-left: calc(var(--space-5) - 3px);
+}
+
+.seanceItemLabel {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+}
+
+.seanceTexte {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -310,4 +449,9 @@
 @keyframes slideIn {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translate(-50%, -48%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }

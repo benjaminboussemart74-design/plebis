@@ -20,7 +20,7 @@ export async function fetchInterventions(parlementaireId, keywords) {
     .select('id, date_seance, texte, point_titre')
     .eq('parlementaire_id', parlementaireId)
     .order('date_seance', { ascending: false })
-    .limit(50)
+    .limit(500)
 
   if (tsQuery) {
     query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
@@ -50,7 +50,7 @@ export async function fetchQuestionsEcrites(parlementaireId, keywords) {
     .select('id, rubrique, tete_analyse, texte_question, ministere, date_depot')
     .eq('parlementaire_id', parlementaireId)
     .order('date_depot', { ascending: false })
-    .limit(50)
+    .limit(500)
 
   if (tsQuery) {
     query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
@@ -80,7 +80,7 @@ export async function fetchAmendements(parlementaireId, keywords) {
     .select('id, objet, expose_motifs, sort, date_depot, texte_legis_ref, division_titre')
     .eq('parlementaire_id', parlementaireId)
     .order('date_depot', { ascending: false })
-    .limit(100)
+    .limit(500)
 
   if (tsQuery) {
     query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
