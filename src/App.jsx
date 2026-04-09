@@ -4,7 +4,7 @@ import SearchBar from './components/SearchBar'
 import KeywordsDisplay from './components/KeywordsDisplay'
 import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
-import { searchParlementaires, fetchAmendements } from './lib/search'
+import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions } from './lib/search'
 
 export default function App() {
   const [loading, setLoading] = useState(false)
@@ -15,6 +15,8 @@ export default function App() {
   const [error, setError] = useState(null)
   const [selectedParlementaire, setSelectedParlementaire] = useState(null)
   const [amendements, setAmendemens] = useState([])
+  const [questionsEcrites, setQuestionsEcrites] = useState([])
+  const [interventions, setInterventions] = useState([])
   const [loadingAmendements, setLoadingAmendements] = useState(false)
 
   async function handleSearch({ query, orientation, chambre }) {
@@ -41,12 +43,22 @@ export default function App() {
   const handleSelectParlementaire = useCallback(async (parlementaire) => {
     setSelectedParlementaire(parlementaire)
     setAmendemens([])
+    setQuestionsEcrites([])
+    setInterventions([])
     setLoadingAmendements(true)
     try {
-      const data = await fetchAmendements(parlementaire.id, keywords)
-      setAmendemens(data)
+      const [amends, questions, intervs] = await Promise.all([
+        fetchAmendements(parlementaire.id, keywords),
+        fetchQuestionsEcrites(parlementaire.id, keywords),
+        fetchInterventions(parlementaire.id, keywords),
+      ])
+      setAmendemens(amends)
+      setQuestionsEcrites(questions)
+      setInterventions(intervs)
     } catch {
       setAmendemens([])
+      setQuestionsEcrites([])
+      setInterventions([])
     } finally {
       setLoadingAmendements(false)
     }
@@ -80,6 +92,9 @@ export default function App() {
       <AmendementPanel
         parlementaire={selectedParlementaire}
         amendements={amendements}
+        questionsEcrites={questionsEcrites}
+        interventions={interventions}
+        keywords={keywords}
         loading={loadingAmendements}
         onClose={() => setSelectedParlementaire(null)}
       />

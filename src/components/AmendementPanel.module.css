@@ -76,6 +76,57 @@
 }
 .close:hover { color: var(--color-text-primary); }
 
+/* ── Onglets ───────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: var(--border-light);
+  flex-shrink: 0;
+  background: var(--color-bg-card);
+}
+
+.tab {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--color-text-primary); }
+
+.tabActive {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.tabCount {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-muted);
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.tabActive .tabCount {
+  background: var(--color-text-primary);
+  color: var(--color-bg-card);
+}
+
+/* ── Compteur ──────────────────────────────────────────── */
 .count {
   padding: var(--space-2) var(--space-5);
   font-family: var(--font-sans);
@@ -203,6 +254,43 @@
   color: var(--color-text-secondary);
   line-height: 1.6;
   margin: 0;
+}
+
+.highlight {
+  background: #FFF3A3;
+  color: var(--color-text-primary);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
+}
+
+/* ── Questions écrites ─────────────────────────────────── */
+.questionMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.rubrique {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5A6A7A;
+  background: #EBF0F5;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.ministere {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 @keyframes fadeIn {

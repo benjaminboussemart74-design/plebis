@@ -51,13 +51,60 @@ function texteUrl(ref) {
   return num ? `https://www.assemblee-nationale.fr/dyn/17/textes/${num}` : null
 }
 
+function questionUrl(id) {
+  return id ? `https://www.assemblee-nationale.fr/dyn/17/questions/${id}` : null
+}
+
+function seanceUrl(interventionId) {
+  const seanceUid = interventionId?.split('__')[0]
+  return seanceUid ? `https://www.assemblee-nationale.fr/dyn/opendata/${seanceUid}.html` : null
+}
+
 function formatDate(d) {
   if (!d) return null
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default function AmendementPanel({ parlementaire, amendements, loading, onClose }) {
+function highlight(text, keywords) {
+  if (!text || !keywords?.length) return text
+  const escaped = keywords
+    .filter(k => k && k.trim().length > 2)
+    .map(k => k.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  if (!escaped.length) return text
+  const splitPattern = new RegExp(`(${escaped.join('|')})`, 'gi')
+  const matchPattern = new RegExp(`^(${escaped.join('|')})$`, 'i')
+  return text.split(splitPattern).map((part, i) =>
+    matchPattern.test(part)
+      ? <mark key={i} className={styles.highlight}>{part}</mark>
+      : part
+  )
+}
+
+function excerptAround(text, keywords, maxLen = 400) {
+  if (!text) return ''
+  if (!keywords?.length) return text.slice(0, maxLen) + (text.length > maxLen ? '…' : '')
+  const pattern = new RegExp(
+    keywords
+      .filter(k => k && k.trim().length > 2)
+      .map(k => k.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|'),
+    'i'
+  )
+  const idx = text.search(pattern)
+  if (idx === -1) return text.slice(0, maxLen) + (text.length > maxLen ? '…' : '')
+  const start = Math.max(0, idx - 120)
+  const end = Math.min(text.length, idx + maxLen - 120)
+  return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '')
+}
+
+export default function AmendementPanel({ parlementaire, amendements, questionsEcrites, interventions, keywords, loading, onClose }) {
+  const [activeTab, setActiveTab] = useState('amendements')
   const [texteMetas, setTexteMetas] = useState({}) // ref → { titre, denomination }
+
+  // Reset tab when parlementaire changes
+  useEffect(() => {
+    setActiveTab('amendements')
+  }, [parlementaire?.id])
 
   // Fermeture par Échap
   useEffect(() => {
@@ -89,6 +136,8 @@ export default function AmendementPanel({ parlementaire, amendements, loading, o
   if (!parlementaire) return null
 
   const { prenom, nom, groupe_sigle, groupe_libelle, couleur_groupe } = parlementaire
+  const qe = questionsEcrites ?? []
+  const iv = interventions ?? []
 
   return (
     <>
@@ -108,76 +157,188 @@ export default function AmendementPanel({ parlementaire, amendements, loading, o
           <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
         </div>
 
-        <div className={styles.count}>
-          {loading
-            ? 'Chargement…'
-            : `${amendements.length} amendement${amendements.length > 1 ? 's' : ''} sur cette thématique`}
+        {/* Onglets */}
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${activeTab === 'amendements' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('amendements')}
+          >
+            📜 Amendements
+            {!loading && <span className={styles.tabCount}>{amendements.length}</span>}
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'questions' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('questions')}
+          >
+            ❓ Questions écrites
+            {!loading && <span className={styles.tabCount}>{qe.length}</span>}
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'interventions' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('interventions')}
+          >
+            🎙 Séance
+            {!loading && <span className={styles.tabCount}>{iv.length}</span>}
+          </button>
         </div>
 
-        <ul className={styles.list}>
-          {amendements.map(a => {
-            const sortInfo = SORT_LABEL[a.sort] ?? null
-            const meta = a.texte_legis_ref ? texteMetas[a.texte_legis_ref] : null
-            const url = texteUrl(a.texte_legis_ref)
+        {loading ? (
+          <div className={styles.count}>Chargement…</div>
+        ) : activeTab === 'amendements' ? (
+          <>
+            <div className={styles.count}>
+              {amendements.length} amendement{amendements.length !== 1 ? 's' : ''} sur cette thématique
+            </div>
+            <ul className={styles.list}>
+              {amendements.map(a => {
+                const sortInfo = SORT_LABEL[a.sort] ?? null
+                const meta = a.texte_legis_ref ? texteMetas[a.texte_legis_ref] : null
+                const url = texteUrl(a.texte_legis_ref)
 
-            return (
-              <li key={a.id} className={styles.item}>
+                return (
+                  <li key={a.id} className={styles.item}>
+                    <div className={styles.texteRef}>
+                      {url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className={styles.texteLink}>
+                          {meta?.denomination && `${meta.denomination} — `}
+                          {meta?.titre ?? `Texte n°${texteNum(a.texte_legis_ref)}`}
+                        </a>
+                      ) : (
+                        <span className={styles.texteNom}>{a.texte_legis_ref}</span>
+                      )}
+                      {a.division_titre && (
+                        <span className={styles.divisionTitre}> · {a.division_titre}</span>
+                      )}
+                    </div>
 
-                {/* Texte législatif visé */}
-                <div className={styles.texteRef}>
-                  {url ? (
-                    <a href={url} target="_blank" rel="noopener noreferrer" className={styles.texteLink}>
-                      {meta?.denomination && `${meta.denomination} — `}
-                      {meta?.titre ?? `Texte n°${texteNum(a.texte_legis_ref)}`}
-                    </a>
-                  ) : (
-                    <span className={styles.texteNom}>{a.texte_legis_ref}</span>
-                  )}
-                  {a.division_titre && (
-                    <span className={styles.divisionTitre}> · {a.division_titre}</span>
-                  )}
-                </div>
+                    <div className={styles.itemHeader}>
+                      <span className={styles.titre}>{amendNum(a.id)}</span>
+                      <div className={styles.itemMeta}>
+                        {sortInfo && (
+                          <span className={`${styles.sort} ${styles[sortInfo.cls]}`}>
+                            {sortInfo.label}
+                          </span>
+                        )}
+                        {a.date_depot && (
+                          <span className={styles.date}>{formatDate(a.date_depot)}</span>
+                        )}
+                        <a
+                          href={anUrl(a.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                          title="Voir sur assemblee-nationale.fr"
+                        >
+                          AN ↗
+                        </a>
+                      </div>
+                    </div>
 
-                {/* En-tête amendement */}
-                <div className={styles.itemHeader}>
-                  <span className={styles.titre}>{amendNum(a.id)}</span>
-                  <div className={styles.itemMeta}>
-                    {sortInfo && (
-                      <span className={`${styles.sort} ${styles[sortInfo.cls]}`}>
-                        {sortInfo.label}
-                      </span>
+                    {a.objet && (
+                      <div className={styles.section}>
+                        <span className={styles.sectionLabel}>Texte amendé</span>
+                        <p className={styles.objet}>{highlight(a.objet, keywords)}</p>
+                      </div>
                     )}
-                    {a.date_depot && (
-                      <span className={styles.date}>{formatDate(a.date_depot)}</span>
+                    {a.expose_motifs && (
+                      <div className={styles.section}>
+                        <span className={styles.sectionLabel}>Exposé des motifs</span>
+                        <p className={styles.objet}>{highlight(a.expose_motifs, keywords)}</p>
+                      </div>
                     )}
-                    <a
-                      href={anUrl(a.id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.link}
-                      title="Voir sur assemblee-nationale.fr"
-                    >
-                      AN ↗
-                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        ) : activeTab === 'questions' ? (
+          <>
+            <div className={styles.count}>
+              {qe.length} question{qe.length !== 1 ? 's' : ''} écrite{qe.length !== 1 ? 's' : ''} sur cette thématique
+            </div>
+            <ul className={styles.list}>
+              {qe.map(q => (
+                <li key={q.id} className={styles.item}>
+                  <div className={styles.itemHeader}>
+                    <div className={styles.questionMeta}>
+                      {q.rubrique && <span className={styles.rubrique}>{q.rubrique}</span>}
+                      {q.ministere && <span className={styles.ministere}>→ {q.ministere}</span>}
+                    </div>
+                    <div className={styles.itemMeta}>
+                      {q.date_depot && (
+                        <span className={styles.date}>{formatDate(q.date_depot)}</span>
+                      )}
+                      <a
+                        href={questionUrl(q.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.link}
+                        title="Voir sur assemblee-nationale.fr"
+                      >
+                        AN ↗
+                      </a>
+                    </div>
                   </div>
-                </div>
-
-                {a.objet && (
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>Texte amendé</span>
-                    <p className={styles.objet}>{a.objet}</p>
+                  {q.tete_analyse && (
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Sujet</span>
+                      <p className={styles.objet}>{highlight(q.tete_analyse, keywords)}</p>
+                    </div>
+                  )}
+                  {q.texte_question && (
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Question</span>
+                      <p className={styles.objet}>{highlight(q.texte_question, keywords)}</p>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            <div className={styles.count}>
+              {iv.length} intervention{iv.length !== 1 ? 's' : ''} en séance sur cette thématique
+            </div>
+            <ul className={styles.list}>
+              {iv.map(i => (
+                <li key={i.id} className={styles.item}>
+                  {i.point_titre && (
+                    <div className={styles.texteRef}>
+                      <a href={seanceUrl(i.id)} target="_blank" rel="noopener noreferrer" className={styles.texteLink}>
+                        {i.point_titre}
+                      </a>
+                    </div>
+                  )}
+                  <div className={styles.itemHeader}>
+                    <span className={styles.titre}>{prenom} {nom}</span>
+                    <div className={styles.itemMeta}>
+                      {i.date_seance && (
+                        <span className={styles.date}>{formatDate(i.date_seance)}</span>
+                      )}
+                      <a
+                        href={seanceUrl(i.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.link}
+                        title="Voir le compte rendu sur assemblee-nationale.fr"
+                      >
+                        AN ↗
+                      </a>
+                    </div>
                   </div>
-                )}
-                {a.expose_motifs && (
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>Exposé des motifs</span>
-                    <p className={styles.objet}>{a.expose_motifs}</p>
-                  </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+                  {i.texte && (
+                    <div className={styles.section}>
+                      <p className={styles.objet}>
+                        {highlight(excerptAround(i.texte, keywords), keywords)}
+                      </p>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </aside>
     </>
   )

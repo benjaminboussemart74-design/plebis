@@ -85,16 +85,35 @@ CREATE INDEX IF NOT EXISTS idx_questions_trgm_rubrique
 CREATE INDEX IF NOT EXISTS idx_questions_parlementaire
   ON questions_ecrites(parlementaire_id);
 
+-- Table interventions (comptes rendus de séance, phase 2 : AN 17e législature)
+CREATE TABLE IF NOT EXISTS interventions (
+  id TEXT PRIMARY KEY,
+  parlementaire_id TEXT NOT NULL REFERENCES parlementaires(id) ON DELETE CASCADE,
+  date_seance DATE,
+  point_titre TEXT,
+  texte TEXT,
+  texte_recherche TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('french', coalesce(texte, ''))
+  ) STORED
+);
+
+CREATE INDEX IF NOT EXISTS idx_interventions_fts
+  ON interventions USING GIN(texte_recherche);
+
+CREATE INDEX IF NOT EXISTS idx_interventions_parlementaire
+  ON interventions(parlementaire_id);
+
 -- Fonction utilitaire : vide toutes les tables (appelée depuis ingest.js via RPC)
 CREATE OR REPLACE FUNCTION truncate_all()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  TRUNCATE TABLE questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
+  TRUNCATE TABLE interventions, questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
 END;
 $$;
 
--- Fonction de recherche principale (score = amendements + questions écrites)
-CREATE OR REPLACE FUNCTION search_parlementaires(
+-- Fonction de recherche principale (score = amendements + questions écrites + interventions)
+DROP FUNCTION IF EXISTS search_parlementaires(text[], text, text);
+CREATE FUNCTION search_parlementaires(
   keywords TEXT[],
   orientation_filter TEXT DEFAULT NULL,
   chambre_filter TEXT DEFAULT NULL
@@ -137,16 +156,23 @@ AS $$
         WHERE q.rubrique ILIKE '%' || kw || '%' OR q.tete_analyse ILIKE '%' || kw || '%'
       )
     GROUP BY q.parlementaire_id
+  ),
+  scores_interventions AS (
+    SELECT i.parlementaire_id, COUNT(i.id) AS cnt
+    FROM interventions i, ts
+    WHERE i.texte_recherche @@ ts.ts_query
+    GROUP BY i.parlementaire_id
   )
   SELECT
     p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle, p.groupe_libelle,
     p.orientation, p.couleur_groupe, p.circonscription, p.photo_url,
-    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) AS score
+    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) AS score
   FROM parlementaires p
   LEFT JOIN scores_amend sa ON sa.parlementaire_id = p.id
   LEFT JOIN scores_questions sq ON sq.parlementaire_id = p.id
+  LEFT JOIN scores_interventions si ON si.parlementaire_id = p.id
   WHERE
-    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0)) > 0
+    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0)) > 0
     AND (orientation_filter IS NULL OR p.orientation = orientation_filter)
     AND (chambre_filter IS NULL OR p.chambre = chambre_filter)
   ORDER BY score DESC

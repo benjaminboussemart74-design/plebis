@@ -132,3 +132,30 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
+
+.scoreCounts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.countAmend,
+.countQuestion {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.countAmend {
+  color: var(--color-text-secondary);
+  background: #F0F0EA;
+}
+
+.countQuestion {
+  color: #5A6A7A;
+  background: #EBF0F5;
+}

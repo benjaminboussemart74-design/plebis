@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 
@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -40,22 +40,23 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 512,
-        system: `Tu es un assistant spécialisé en politique française. À partir de la thématique fournie, génère une liste de 10 à 15 mots-clés et expressions utilisés dans les débats parlementaires français sur ce sujet. Réponds UNIQUEMENT avec un tableau JSON de chaînes de caractères, sans preamble ni balises markdown.`,
+        max_tokens: 256,
+        system: `Tu es un expert en terminologie législative française. Pour le terme fourni, retourne UNIQUEMENT ses équivalents directs : acronymes et sigles officiels EN PRIORITÉ, puis synonymes stricts et dénominations législatives exactes. NE fais PAS d'expansion thématique. NE liste PAS de sujets connexes. Maximum 5 termes, ceux qui apparaissent littéralement dans les textes parlementaires.\n\nExemples :\n- "rénovation énergétique" → ["DPE", "MaPrimeRénov", "rénovation thermique", "BBC rénovation", "CEE"]\n- "intelligence artificielle" → ["IA", "algorithme", "système d'IA"]\n- "revenu universel" → ["RSA", "revenu de base", "allocation universelle"]\n\nRéponds UNIQUEMENT avec un tableau JSON de chaînes de caractères, sans preamble ni balises markdown.`,
         messages: [{ role: 'user', content: query.trim() }],
       }),
     })
 
+    const rawBody = await response.text()
+
     if (!response.ok) {
-      const err = await response.text()
-      console.error('Anthropic API error:', err)
+      console.error('Anthropic error', response.status, rawBody)
       return new Response(
-        JSON.stringify({ error: 'Erreur lors de l\'appel à l\'API Anthropic.' }),
+        JSON.stringify({ error: 'Erreur Anthropic', detail: rawBody }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const data = await response.json()
+    const data = JSON.parse(rawBody)
     const text = data.content?.[0]?.text ?? '[]'
 
     let keywords: string[]

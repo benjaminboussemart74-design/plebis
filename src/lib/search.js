@@ -2,6 +2,66 @@ import { supabase } from './supabase.js'
 import { expandQuery } from './anthropic.js'
 
 /**
+ * Charge les interventions en séance d'un parlementaire matchant les keywords courants.
+ */
+export async function fetchInterventions(parlementaireId, keywords) {
+  const tsQuery = keywords
+    .map(k =>
+      k.split(/\s+/)
+        .map(w => w.replace(/[^a-zA-ZÀ-ÿ0-9]/g, ''))
+        .filter(Boolean)
+        .join(' & ')
+    )
+    .filter(Boolean)
+    .join(' | ')
+
+  let query = supabase
+    .from('interventions')
+    .select('id, date_seance, texte, point_titre')
+    .eq('parlementaire_id', parlementaireId)
+    .order('date_seance', { ascending: false })
+    .limit(50)
+
+  if (tsQuery) {
+    query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error('Erreur chargement interventions')
+  return data ?? []
+}
+
+/**
+ * Charge les questions écrites d'un parlementaire matchant les keywords courants.
+ */
+export async function fetchQuestionsEcrites(parlementaireId, keywords) {
+  const tsQuery = keywords
+    .map(k =>
+      k.split(/\s+/)
+        .map(w => w.replace(/[^a-zA-ZÀ-ÿ0-9]/g, ''))
+        .filter(Boolean)
+        .join(' & ')
+    )
+    .filter(Boolean)
+    .join(' | ')
+
+  let query = supabase
+    .from('questions_ecrites')
+    .select('id, rubrique, tete_analyse, texte_question, ministere, date_depot')
+    .eq('parlementaire_id', parlementaireId)
+    .order('date_depot', { ascending: false })
+    .limit(50)
+
+  if (tsQuery) {
+    query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error('Erreur chargement questions écrites')
+  return data ?? []
+}
+
+/**
  * Charge les amendements d'un parlementaire matchant les keywords courants.
  */
 export async function fetchAmendements(parlementaireId, keywords) {
@@ -69,6 +129,8 @@ export async function searchParlementaires({ query, orientation, chambre }) {
     results: results.map((r) => ({
       ...r,
       score: Number(r.score),
+      amendements_count: Number(r.amendements_count ?? 0),
+      questions_count: Number(r.questions_count ?? 0),
       scorePct: maxScore > 0 ? Math.round((Number(r.score) / maxScore) * 100) : 0,
     })),
   }
