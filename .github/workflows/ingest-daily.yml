@@ -26,6 +26,16 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Debug environnement
+        run: |
+          echo "platform : $(node -e 'console.log(process.platform)')"
+          echo "os.tmpdir() : $(node -e 'import("os").then(m => console.log(m.tmpdir()))')"
+          echo "TEMP=$TEMP"
+          echo "TMP=$TMP"
+          echo "TMPDIR=$TMPDIR"
+          echo "TMP dans Node : $(node -e 'console.log(process.env.TEMP, process.env.TMP)')"
+          echo "Chemin final : $(node -e 'import("path").then(p => console.log(p.join("/tmp","test.zip")))')"
+
       - name: Ingestion comptes rendus de séance
         run: npm run ingest:cr
         env:
