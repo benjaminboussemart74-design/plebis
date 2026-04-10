@@ -26,6 +26,7 @@ import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { createReadStream, unlinkSync, statSync, existsSync } from 'fs'
 import { execFileSync } from 'child_process'
+import { join } from 'path'
 import unzipper from 'unzipper'
 import { XMLParser } from 'fast-xml-parser'
 
@@ -131,11 +132,13 @@ function collectParagraphes(points, sommaireMap, inheritedTitre = null) {
 
 // ─── Téléchargement ──────────────────────────────────────────────────────────
 
+const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
+
 function downloadZip(url, tmpName) {
-  const tmpPath = (TMP + '/' + tmpName).replace(/\//g, '\\')
+  const tmpPath = join(TMP, tmpName)
   if (existsSync(tmpPath)) unlinkSync(tmpPath)
   console.log(`  Téléchargement : ${url.split('/').pop()}`)
-  execFileSync('curl.exe', [
+  execFileSync(CURL, [
     '-L', '-A', 'Mozilla/5.0',
     '--retry', '5',
     '--retry-delay', '3',

@@ -19,6 +19,7 @@ import { createReadStream, createWriteStream, unlinkSync, statSync, existsSync }
 import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
 import { execFileSync } from 'child_process'
+import { join } from 'path'
 import unzipper from 'unzipper'
 import he from 'he'
 
@@ -104,13 +105,15 @@ function stripHtml(s) {
 
 // ─── Téléchargement ──────────────────────────────────────────────────────────
 
-// Télécharge avec curl.exe (reprise automatique si coupure, --retry 5 -C -)
+// Télécharge avec curl (reprise automatique si coupure, --retry 5)
+const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
+
 function downloadZip(url, tmpName) {
-  const tmpPath = `${TMP}\\${tmpName}`.replace(/\//g, '\\')
+  const tmpPath = join(TMP, tmpName)
   // Supprimer tout fichier partiel d'une tentative précédente
   if (existsSync(tmpPath)) unlinkSync(tmpPath)
   console.log(`  Téléchargement : ${url.split('/').pop()}`)
-  execFileSync('curl.exe', [
+  execFileSync(CURL, [
     '-L', '-A', 'Mozilla/5.0',
     '--retry', '5',
     '--retry-delay', '3',
