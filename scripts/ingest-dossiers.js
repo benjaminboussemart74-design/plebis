@@ -16,6 +16,7 @@ import { createRequire } from 'module'
 import { execFileSync } from 'child_process'
 import { existsSync, unlinkSync, statSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 
 const require = createRequire(import.meta.url)
 const AdmZip = require('adm-zip')
@@ -25,7 +26,7 @@ const AdmZip = require('adm-zip')
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const BATCH_SIZE = 500
-const TMP = process.env.TEMP || process.env.TMP || '/tmp'
+const TMP = tmpdir()
 const DOSSIERS_URL = 'https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers/Dossiers_Legislatifs.json.zip'
 const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
 

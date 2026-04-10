@@ -27,6 +27,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createReadStream, unlinkSync, statSync, existsSync } from 'fs'
 import { execFileSync } from 'child_process'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import unzipper from 'unzipper'
 import { XMLParser } from 'fast-xml-parser'
 
@@ -35,7 +36,7 @@ import { XMLParser } from 'fast-xml-parser'
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const BATCH_SIZE = 500
-const TMP = process.env.TEMP || process.env.TMP || '/tmp'
+const TMP = tmpdir()
 
 const CR_URL =
   'https://data.assemblee-nationale.fr/static/openData/repository/17/vp/syceronbrut/syseron.xml.zip'
