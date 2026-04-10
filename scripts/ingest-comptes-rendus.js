@@ -254,7 +254,7 @@ async function batchUpsert(table, rows) {
 async function main() {
   console.log('\n  Ingestion des comptes rendus de séance (AN 17e législature)\n')
 
-  const zipPath = (TMP + '/syseron.xml.zip').replace(/\//g, '\\')
+  const zipPath = join(TMP, 'syseron.xml.zip')
 
   try {
     // 1. Téléchargement (skip si déjà présent)
