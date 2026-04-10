@@ -20,7 +20,6 @@ import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
 import { execFileSync } from 'child_process'
 import { join } from 'path'
-import { tmpdir } from 'os'
 import unzipper from 'unzipper'
 import he from 'he'
 
@@ -29,7 +28,7 @@ import he from 'he'
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const BATCH_SIZE = 500
-const TMP = tmpdir()
+const TMP = process.platform === 'win32' ? process.env.TEMP || process.env.TMP || 'C:\\Temp' : '/tmp'
 
 const DEPUTES_URL =
   'https://data.assemblee-nationale.fr/static/openData/repository/17/amo/deputes_actifs_mandats_actifs_organes/AMO10_deputes_actifs_mandats_actifs_organes.json.zip'
