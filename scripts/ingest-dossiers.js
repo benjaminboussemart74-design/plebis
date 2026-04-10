@@ -1,8 +1,7 @@
 /**
  * Plébis — Script d'ingestion des Dossiers Législatifs AN 17e législature
  *
- * Source : Dossiers_Legislatifs.json.zip (data.assemblee-nationale.fr)
- * ZIP local attendu : C:/Users/benja/Downloads/Dossiers_Legislatifs.json.zip
+ * Source : https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers/Dossiers_Legislatifs.json.zip
  *
  * Usage :
  *   npm run ingest:dossiers
@@ -14,6 +13,9 @@
 import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import { createRequire } from 'module'
+import { execFileSync } from 'child_process'
+import { existsSync, unlinkSync, statSync } from 'fs'
+import { join } from 'path'
 
 const require = createRequire(import.meta.url)
 const AdmZip = require('adm-zip')
@@ -23,7 +25,9 @@ const AdmZip = require('adm-zip')
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const BATCH_SIZE = 500
-const ZIP_PATH = 'C:/Users/benja/Downloads/Dossiers_Legislatifs.json.zip'
+const TMP = process.env.TEMP || process.env.TMP || '/tmp'
+const DOSSIERS_URL = 'https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers/Dossiers_Legislatifs.json.zip'
+const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error(' Variables manquantes : VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY requis dans .env')
@@ -68,6 +72,25 @@ async function upsertBatch(rows) {
   }
 }
 
+// ─── Téléchargement ──────────────────────────────────────────────────────────
+
+function downloadZip(url, tmpName) {
+  const tmpPath = join(TMP, tmpName)
+  if (existsSync(tmpPath)) unlinkSync(tmpPath)
+  console.log(`  Téléchargement : ${url.split('/').pop()}`)
+  execFileSync(CURL, [
+    '-L', '-A', 'Mozilla/5.0',
+    '--retry', '5',
+    '--retry-delay', '3',
+    '--retry-connrefused',
+    '-o', tmpPath,
+    url,
+  ], { stdio: 'inherit' })
+  const size = statSync(tmpPath).size
+  console.log(`    ${(size / 1024 / 1024).toFixed(1)} Mo téléchargés`)
+  return tmpPath
+}
+
 // ─── Ingestion ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -83,6 +106,7 @@ async function main() {
   const validIds = new Set(parls.map(p => p.id))
   console.log(`   ${validIds.size} parlementaires en base`)
 
+  const ZIP_PATH = downloadZip(DOSSIERS_URL, 'Dossiers_Legislatifs.json.zip')
   console.log(' Lecture du ZIP :', ZIP_PATH)
   const zip = new AdmZip(ZIP_PATH)
   const entries = zip.getEntries().filter(e => e.entryName.endsWith('.json'))
