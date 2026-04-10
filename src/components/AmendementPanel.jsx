@@ -2,95 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import styles from './AmendementPanel.module.css'
 import { getGroupeLogo } from '../lib/groupeLogos'
 import { supabase } from '../lib/supabase'
-
-const SORT_LABEL = {
-  'Adopté':      { label: 'Adopté',       cls: 'adopte' },
-  'Rejeté':      { label: 'Rejeté',       cls: 'rejete' },
-  'Retiré':      { label: 'Retiré',       cls: 'retire' },
-  'Tombé':       { label: 'Tombé',        cls: 'tombe'  },
-  'Non soutenu': { label: 'Non soutenu',  cls: 'tombe'  },
-}
-
-// Cache global pour éviter les appels dupliqués entre ouvertures de panneau
-const texteCache = new Map()
-
-const PROXY = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/an-proxy`
-
-async function fetchTexteMeta(ref) {
-  if (texteCache.has(ref)) return texteCache.get(ref)
-  try {
-    const res = await fetch(`${PROXY}?type=opendata&ref=${encodeURIComponent(ref)}`)
-    if (!res.ok) { texteCache.set(ref, null); return null }
-    const d = await res.json()
-    const meta = {
-      titre: d.titres?.titrePrincipal ?? null,
-      denomination: d.denominationStructurelle ?? null,
-    }
-    texteCache.set(ref, meta)
-    return meta
-  } catch {
-    texteCache.set(ref, null)
-    return null
-  }
-}
-
-function anUrl(id) {
-  return `https://www.assemblee-nationale.fr/dyn/17/amendements/${id}`
-}
-
-function amendNum(id) {
-  const m = id?.match(/N(\d+)$/)
-  return m ? `n°${parseInt(m[1], 10)}` : id
-}
-
-function texteNum(ref) {
-  const m = ref?.match(/B(?:TC)?(\d+)/)
-  return m ? parseInt(m[1], 10).toString() : null
-}
-
-function texteUrl(ref) {
-  const num = texteNum(ref)
-  return num ? `https://www.assemblee-nationale.fr/dyn/17/textes/${num}` : null
-}
-
-function formatDate(d) {
-  if (!d) return null
-  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+import { SORT_LABEL, anUrl, amendNum, texteNum, texteUrl, formatDate, excerptAround, highlight as _highlight, fetchTexteMeta } from '../lib/panelUtils'
 
 function highlight(text, keywords) {
-  if (!text || !keywords?.length) return text
-  const escaped = keywords
-    .filter(k => k && k.trim().length > 2)
-    .map(k => k.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  if (!escaped.length) return text
-  const splitPattern = new RegExp(`(${escaped.join('|')})`, 'gi')
-  const matchPattern = new RegExp(`^(${escaped.join('|')})$`, 'i')
-  return text.split(splitPattern).map((part, i) =>
-    matchPattern.test(part)
-      ? <mark key={i} className={styles.highlight}>{part}</mark>
-      : part
-  )
+  return _highlight(text, keywords, styles.highlight)
 }
 
-function excerptAround(text, keywords, maxLen = 400) {
-  if (!text) return ''
-  if (!keywords?.length) return text.slice(0, maxLen) + (text.length > maxLen ? '…' : '')
-  const pattern = new RegExp(
-    keywords
-      .filter(k => k && k.trim().length > 2)
-      .map(k => k.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-      .join('|'),
-    'i'
-  )
-  const idx = text.search(pattern)
-  if (idx === -1) return text.slice(0, maxLen) + (text.length > maxLen ? '…' : '')
-  const start = Math.max(0, idx - 120)
-  const end = Math.min(text.length, idx + maxLen - 120)
-  return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '')
-}
-
-export default function AmendementPanel({ parlementaire, amendements, questionsEcrites, interventions, keywords, loading, onClose }) {
+export default function AmendementPanel({ parlementaire, amendements, questionsEcrites, interventions, dossiers, keywords, loading, onClose }) {
   const [activeTab, setActiveTab] = useState('amendements')
   const [texteMetas, setTexteMetas] = useState({})
 
@@ -108,7 +26,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
   const modalStateRef = useRef(null)
   useEffect(() => { modalStateRef.current = modal }, [modal])
 
-  // Reset tab when parlementaire changes
   useEffect(() => {
     setActiveTab('amendements')
     setModal(null)
@@ -126,14 +43,12 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Scroll vers l'intervention surlignée après chargement
   useEffect(() => {
     if (!modalLoading && modalItems.length && highlightRef.current) {
       highlightRef.current.scrollIntoView({ behavior: 'instant', block: 'center' })
     }
   }, [modalLoading, modalItems])
 
-  // Fetch les titres des textes législatifs uniques
   useEffect(() => {
     if (!amendements.length) return
     const refs = [...new Set(amendements.map(a => a.texte_legis_ref).filter(Boolean))]
@@ -143,7 +58,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     return () => { cancelled = true }
   }, [amendements])
 
-  // ── Modale : ouvrir compte rendu de séance ──────────────
   async function openSeanceModal(intervention) {
     const seanceUid = intervention.id.split('__')[0]
     setModal({ type: 'seance', interventionId: intervention.id, seanceUid, date_seance: intervention.date_seance, point_titre: intervention.point_titre })
@@ -166,7 +80,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     }
   }
 
-  // ── Modale : ouvrir question écrite complète ─────────────
   function openQuestionModal(question) {
     setModal({ type: 'question', question })
   }
@@ -183,6 +96,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
   const groupeLogo = getGroupeLogo(groupe_sigle)
   const qe = questionsEcrites ?? []
   const iv = interventions ?? []
+  const doss = dossiers ?? []
 
   return (
     <>
@@ -199,22 +113,26 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
               </span>
             )}
           </div>
-          <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+          <button className={styles.close} onClick={onClose} aria-label="Fermer">×</button>
         </div>
 
         {/* Onglets */}
         <div className={styles.tabs}>
           <button className={`${styles.tab} ${activeTab === 'amendements' ? styles.tabActive : ''}`} onClick={() => setActiveTab('amendements')}>
-            📜 Amendements
+            Amendements
             {!loading && <span className={styles.tabCount}>{amendements.length}</span>}
           </button>
           <button className={`${styles.tab} ${activeTab === 'questions' ? styles.tabActive : ''}`} onClick={() => setActiveTab('questions')}>
-            ❓ Questions écrites
+            Questions écrites
             {!loading && <span className={styles.tabCount}>{qe.length}</span>}
           </button>
           <button className={`${styles.tab} ${activeTab === 'interventions' ? styles.tabActive : ''}`} onClick={() => setActiveTab('interventions')}>
-            🎙 Séance
+            Séance
             {!loading && <span className={styles.tabCount}>{iv.length}</span>}
+          </button>
+          <button className={`${styles.tab} ${activeTab === 'dossiers' ? styles.tabActive : ''}`} onClick={() => setActiveTab('dossiers')}>
+            Dossiers
+            {!loading && <span className={styles.tabCount}>{doss.length}</span>}
           </button>
         </div>
 
@@ -315,7 +233,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
               ))}
             </ul>
           </>
-        ) : (
+        ) : activeTab === 'interventions' ? (
           <>
             <div className={styles.count}>
               {iv.length} intervention{iv.length !== 1 ? 's' : ''} en séance sur cette thématique
@@ -346,6 +264,39 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
               ))}
             </ul>
           </>
+        ) : (
+          <>
+            <div className={styles.count}>
+              {doss.length} dossier{doss.length !== 1 ? 's' : ''} législatif{doss.length !== 1 ? 's' : ''} sur cette thématique
+            </div>
+            <ul className={styles.list}>
+              {doss.map(d => {
+                const anUrl = d.titre_chemin
+                  ? `https://www.assemblee-nationale.fr/dyn/17/dossiers/${d.titre_chemin}`
+                  : null
+                return (
+                  <li key={d.id} className={styles.item}>
+                    {d.procedure_libelle && (
+                      <div className={styles.texteRef}>
+                        <span className={styles.procedureBadge}>{d.procedure_libelle}</span>
+                      </div>
+                    )}
+                    <div className={styles.itemHeader}>
+                      <span className={styles.dossierTitre}>{highlight(d.titre, keywords)}</span>
+                      <div className={styles.itemMeta}>
+                        {d.date_depot && <span className={styles.date}>{formatDate(d.date_depot)}</span>}
+                        {anUrl && (
+                          <a href={anUrl} target="_blank" rel="noopener noreferrer" className={styles.link} title="Voir sur assemblee-nationale.fr">
+                            AN ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </aside>
 
@@ -371,7 +322,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                   <span className={styles.modalDate}>{formatDate(modal.question.date_depot)}</span>
                 )}
               </div>
-              <button className={styles.close} onClick={closeModal} aria-label="Fermer">✕</button>
+              <button className={styles.close} onClick={closeModal} aria-label="Fermer">×</button>
             </div>
 
             <div className={styles.modalBody}>

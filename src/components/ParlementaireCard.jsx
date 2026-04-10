@@ -7,7 +7,7 @@ export default function ParlementaireCard({ parlementaire, rank, onClick }) {
   const {
     nom, prenom, chambre, groupe_sigle, groupe_libelle,
     couleur_groupe, circonscription, score, scorePct, photo_url,
-    amendements_count, questions_count, interventions_count,
+    amendements_count, questions_count, interventions_count, dossiers_count,
   } = parlementaire
 
   const initials = `${prenom?.[0] ?? ''}${nom?.[0] ?? ''}`.toUpperCase()
@@ -71,17 +71,22 @@ export default function ParlementaireCard({ parlementaire, rank, onClick }) {
           <div className={styles.scoreCounts}>
             {amendements_count > 0 && (
               <span className={styles.countAmend}>
-                📜 {amendements_count} amend.
+                {amendements_count} amend.
               </span>
             )}
             {questions_count > 0 && (
               <span className={styles.countQuestion}>
-                ❓ {questions_count} question{questions_count > 1 ? 's' : ''}
+                {questions_count} question{questions_count > 1 ? 's' : ''}
               </span>
             )}
             {interventions_count > 0 && (
               <span className={styles.countIntervention}>
-                🎙 {interventions_count} séance{interventions_count > 1 ? 's' : ''}
+                {interventions_count} séance{interventions_count > 1 ? 's' : ''}
+              </span>
+            )}
+            {dossiers_count > 0 && (
+              <span className={styles.countDossier}>
+                {dossiers_count} dossier{dossiers_count > 1 ? 's' : ''}
               </span>
             )}
           </div>

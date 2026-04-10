@@ -150,7 +150,9 @@
 }
 
 .countAmend,
-.countQuestion {
+.countQuestion,
+.countIntervention,
+.countDossier {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
@@ -167,4 +169,14 @@
 .countQuestion {
   color: #5A6A7A;
   background: #EBF0F5;
+}
+
+.countIntervention {
+  color: #5A4A2A;
+  background: #F5EFE0;
+}
+
+.countDossier {
+  color: #3A5A3A;
+  background: #E8F0E8;
 }

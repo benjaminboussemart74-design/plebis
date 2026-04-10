@@ -1,0 +1,344 @@
+.hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem var(--space-16);
+}
+
+/* ── Suggestions ── */
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-12);
+}
+
+.suggestionChip {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: var(--border-light);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.suggestionChip:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.suggestionsLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  align-self: center;
+  margin-right: var(--space-1);
+}
+
+/* ── Colonnes classement ── */
+.rankingSection {
+  border-top: var(--border-editorial);
+  padding-top: var(--space-8);
+}
+
+.rankingTitle {
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+@media (max-width: 640px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.columnTitle {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  border-bottom: var(--border-light);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.methodology {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+  min-height: 2.5em;
+}
+
+/* ── Podium ── */
+.podiumItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.podiumItem.rank1 {
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-bg-card);
+  border-left: 3px solid var(--color-editorial);
+  margin-left: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-1);
+}
+
+.rank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  min-width: 18px;
+  text-align: right;
+}
+
+.rank1 .rank {
+  color: var(--color-editorial);
+  font-size: 12px;
+}
+
+.photo {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--color-bg-sidebar);
+}
+
+.rank1 .photo {
+  width: 38px;
+  height: 38px;
+}
+
+.initials {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rank1 .initials {
+  width: 38px;
+  height: 38px;
+  font-size: 13px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank1 .name {
+  font-size: 14px;
+}
+
+.groupeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.groupeLogo {
+  height: 14px;
+  width: auto;
+  max-width: 52px;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.rank1 .groupeLogo {
+  height: 16px;
+  max-width: 60px;
+}
+
+.groupe {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rank1 .metric {
+  font-size: 14px;
+}
+
+/* ── Bouton "Voir les 577" ── */
+.seeAllBtn {
+  margin-top: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+}
+
+.seeAllBtn:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ── Modale ── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 30, 92, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .modalBackdrop {
+    align-items: center;
+  }
+}
+
+.modal {
+  background: var(--color-bg-card);
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border-top: var(--border-editorial);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: var(--border-light);
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.modalClose {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 var(--space-1);
+}
+
+.modalClose:hover {
+  color: var(--color-text-primary);
+}
+
+.modalList {
+  overflow-y: auto;
+  flex: 1;
+  padding: var(--space-2) var(--space-4);
+}
+
+.modalItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-bottom: var(--border-light);
+}
+
+.modalRank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+.modalMetric {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-accent);
+  min-width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg-sidebar) 25%, var(--color-bg-hover) 50%, var(--color-bg-sidebar) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 3px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

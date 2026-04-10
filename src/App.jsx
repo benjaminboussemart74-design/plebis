@@ -4,7 +4,8 @@ import SearchBar from './components/SearchBar'
 import KeywordsDisplay from './components/KeywordsDisplay'
 import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
-import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions } from './lib/search'
+import LandingHero from './components/LandingHero'
+import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
 
 export default function App() {
   const [loading, setLoading] = useState(false)
@@ -15,23 +16,31 @@ export default function App() {
   const [lastQuery, setLastQuery] = useState('')
   const [error, setError] = useState(null)
   const [selectedParlementaire, setSelectedParlementaire] = useState(null)
-  const [amendements, setAmendemens] = useState([])
+  const [amendements, setAmendements] = useState([])
   const [questionsEcrites, setQuestionsEcrites] = useState([])
   const [interventions, setInterventions] = useState([])
+  const [dossiers, setDossiers] = useState([])
   const [loadingAmendements, setLoadingAmendements] = useState(false)
+
+  // null | { type: 'amendements'|'questions'|'interventions'|'dossiers', data: [], loading: bool }
+  const [activeDocView, setActiveDocView] = useState(null)
+  const [parlIndex, setParlIndex] = useState({})
 
   async function handleSearch({ query, orientation, chambre }) {
     setLoading(true)
     setError(null)
     setLastQuery(query)
+    setActiveDocView(null)
 
     try {
-      const { keywords: kws, results: res } = await searchParlementaires({
-        query, orientation, chambre,
-      })
+      const [{ keywords: kws, results: res }, allParls] = await Promise.all([
+        searchParlementaires({ query, orientation, chambre }),
+        fetchAllParlementaires(),
+      ])
       setKeywords(kws)
       setResults(res)
       setSearched(true)
+      setParlIndex(Object.fromEntries(allParls.map(p => [p.id, p])))
 
       const totalScore = res.reduce((sum, p) => sum + (p.score ?? 0), 0)
       const grouped = res.reduce((acc, p) => {
@@ -61,25 +70,45 @@ export default function App() {
     }
   }
 
+  const handleTotalClick = useCallback(async (type) => {
+    setActiveDocView({ type, data: [], loading: true })
+    setSelectedParlementaire(null)
+    try {
+      let data = []
+      if (type === 'amendements')    data = await fetchAmendements(null, keywords)
+      else if (type === 'questions') data = await fetchQuestionsEcrites(null, keywords)
+      else if (type === 'interventions') data = await fetchInterventions(null, keywords)
+      else if (type === 'dossiers')  data = await fetchDossiers(null, keywords)
+      setActiveDocView({ type, data, loading: false })
+    } catch {
+      setActiveDocView({ type, data: [], loading: false })
+    }
+  }, [keywords])
+
   const handleSelectParlementaire = useCallback(async (parlementaire) => {
     setSelectedParlementaire(parlementaire)
-    setAmendemens([])
+    setActiveDocView(null)
+    setAmendements([])
     setQuestionsEcrites([])
     setInterventions([])
+    setDossiers([])
     setLoadingAmendements(true)
     try {
-      const [amends, questions, intervs] = await Promise.all([
+      const [amends, questions, intervs, doss] = await Promise.all([
         fetchAmendements(parlementaire.id, keywords),
         fetchQuestionsEcrites(parlementaire.id, keywords),
         fetchInterventions(parlementaire.id, keywords),
+        fetchDossiers(parlementaire.id, keywords),
       ])
-      setAmendemens(amends)
+      setAmendements(amends)
       setQuestionsEcrites(questions)
       setInterventions(intervs)
+      setDossiers(doss)
     } catch {
-      setAmendemens([])
+      setAmendements([])
       setQuestionsEcrites([])
       setInterventions([])
+      setDossiers([])
     } finally {
       setLoadingAmendements(false)
     }
@@ -103,12 +132,20 @@ export default function App() {
         {searched && !loading && (
           <KeywordsDisplay keywords={keywords} query={lastQuery} />
         )}
+        {!searched && !loading && (
+          <LandingHero onSearch={handleSearch} />
+        )}
         <ResultsList
           results={results}
           groupStats={groupStats}
           loading={loading}
           searched={searched}
           onSelectParlementaire={handleSelectParlementaire}
+          activeDocView={activeDocView}
+          onTotalClick={handleTotalClick}
+          onCloseDocView={() => setActiveDocView(null)}
+          parlIndex={parlIndex}
+          keywords={keywords}
         />
       </main>
       <AmendementPanel
@@ -116,6 +153,7 @@ export default function App() {
         amendements={amendements}
         questionsEcrites={questionsEcrites}
         interventions={interventions}
+        dossiers={dossiers}
         keywords={keywords}
         loading={loadingAmendements}
         onClose={() => setSelectedParlementaire(null)}

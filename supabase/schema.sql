@@ -103,18 +103,39 @@ CREATE INDEX IF NOT EXISTS idx_interventions_fts
 CREATE INDEX IF NOT EXISTS idx_interventions_parlementaire
   ON interventions(parlementaire_id);
 
+-- Table dossiers_legislatifs (4e source de signal d'activité parlementaire)
+CREATE TABLE IF NOT EXISTS dossiers_legislatifs (
+  id TEXT PRIMARY KEY,               -- "{uid}_{parlementaire_id}"
+  dossier_uid TEXT NOT NULL,
+  parlementaire_id TEXT REFERENCES parlementaires(id) ON DELETE CASCADE,
+  titre TEXT,
+  procedure_libelle TEXT,
+  legislature INT DEFAULT 17,
+  texte_recherche TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector('french', COALESCE(titre, ''))
+  ) STORED
+);
+
+CREATE INDEX IF NOT EXISTS idx_dossiers_fts
+  ON dossiers_legislatifs USING GIN(texte_recherche);
+
+CREATE INDEX IF NOT EXISTS idx_dossiers_parlementaire
+  ON dossiers_legislatifs(parlementaire_id);
+
 -- Fonction utilitaire : vide toutes les tables (appelée depuis ingest.js via RPC)
 CREATE OR REPLACE FUNCTION truncate_all()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  TRUNCATE TABLE interventions, questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
+  TRUNCATE TABLE dossiers_legislatifs, interventions, questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
 END;
 $$;
 
--- Fonction de recherche principale (score = amendements + questions écrites + interventions)
+-- Fonction de recherche principale (score = amendements + questions écrites + interventions + dossiers)
 -- SECURITY DEFINER + SET statement_timeout : contourne le timeout de la clé anon (3-8s)
--- Résultats exhaustifs : aucun LIMIT sur les scans FTS, scan complet des 3 tables
-CREATE OR REPLACE FUNCTION search_parlementaires(
+-- Résultats exhaustifs : aucun LIMIT sur les scans FTS, scan complet des 4 tables
+DROP FUNCTION IF EXISTS search_parlementaires(text[], text, text);
+
+CREATE FUNCTION search_parlementaires(
   keywords TEXT[],
   orientation_filter TEXT DEFAULT NULL,
   chambre_filter TEXT DEFAULT NULL
@@ -133,7 +154,8 @@ RETURNS TABLE (
   score BIGINT,
   amendements_count BIGINT,
   questions_count BIGINT,
-  interventions_count BIGINT
+  interventions_count BIGINT,
+  dossiers_count BIGINT
 )
 LANGUAGE sql STABLE SECURITY DEFINER
 SET statement_timeout TO '30s'
@@ -161,20 +183,28 @@ AS $$
     FROM interventions i, ts
     WHERE i.texte_recherche @@ ts.ts_query
     GROUP BY i.parlementaire_id
+  ),
+  scores_dossiers AS (
+    SELECT d.parlementaire_id, COUNT(d.id) AS cnt
+    FROM dossiers_legislatifs d, ts
+    WHERE d.texte_recherche @@ ts.ts_query
+    GROUP BY d.parlementaire_id
   )
   SELECT
     p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle, p.groupe_libelle,
     p.orientation, p.couleur_groupe, p.circonscription, p.photo_url,
-    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) AS score,
+    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) + COALESCE(sd.cnt, 0) AS score,
     COALESCE(sa.cnt, 0) AS amendements_count,
     COALESCE(sq.cnt, 0) AS questions_count,
-    COALESCE(si.cnt, 0) AS interventions_count
+    COALESCE(si.cnt, 0) AS interventions_count,
+    COALESCE(sd.cnt, 0) AS dossiers_count
   FROM parlementaires p
   LEFT JOIN scores_amend sa ON sa.parlementaire_id = p.id
   LEFT JOIN scores_questions sq ON sq.parlementaire_id = p.id
   LEFT JOIN scores_interventions si ON si.parlementaire_id = p.id
+  LEFT JOIN scores_dossiers sd ON sd.parlementaire_id = p.id
   WHERE
-    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0)) > 0
+    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) + COALESCE(sd.cnt, 0)) > 0
     AND (orientation_filter IS NULL OR p.orientation = orientation_filter)
     AND (chambre_filter IS NULL OR p.chambre = chambre_filter)
   ORDER BY score DESC

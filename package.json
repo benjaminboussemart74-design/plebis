@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "ingest": "node --max-old-space-size=4096 scripts/ingest.js",
-    "ingest:cr": "node --max-old-space-size=4096 scripts/ingest-comptes-rendus.js"
+    "ingest:cr": "node --max-old-space-size=4096 scripts/ingest-comptes-rendus.js",
+    "ingest:dossiers": "node scripts/ingest-dossiers.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",

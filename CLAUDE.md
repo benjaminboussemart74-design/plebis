@@ -12,7 +12,7 @@ Il contient : typographie, palette, espacements, composants, et principes édito
 ## Objectif
 
 Moteur de recherche des parlementaires français actifs sur une thématique donnée.
-L'utilisateur saisit un sujet → l'IA génère des mots-clés → Supabase retourne les parlementaires classés par activité (amendements + questions écrites + interventions en séance, AN 17e législature).
+L'utilisateur saisit un sujet → l'IA génère des mots-clés → Supabase retourne les parlementaires classés par activité (amendements + questions écrites + interventions en séance + dossiers législatifs, AN 17e législature).
 
 ---
 
@@ -47,13 +47,15 @@ parlsearch/
 │   │   ├── Header.jsx / .module.css
 │   │   ├── SearchBar.jsx / .module.css
 │   │   ├── KeywordsDisplay.jsx / .module.css
+│   │   ├── LandingHero.jsx / .module.css       ← page d'accueil : podiums top amendeurs/questionneurs/efficaces + suggestions
 │   │   ├── ParlementaireCard.jsx / .module.css
-│   │   ├── ResultsList.jsx / .module.css
-│   │   └── AmendementPanel.jsx / .module.css   ← panneau latéral (3 onglets)
+│   │   ├── ResultsList.jsx / .module.css       ← résultats + DocView (vue documents inline tous parlementaires)
+│   │   └── AmendementPanel.jsx / .module.css   ← panneau latéral par parlementaire (4 onglets)
 │   ├── lib/
 │   │   ├── supabase.js       (client Supabase)
 │   │   ├── anthropic.js      (appel Edge Function expand-query)
-│   │   ├── search.js         (orchestration recherche + scoring + fetch* 3 sources)
+│   │   ├── search.js         (orchestration recherche + scoring + fetch* 4 sources)
+│   │   ├── panelUtils.jsx    (utilitaires partagés panel : hl, anUrl, amendNum, formatDate, fetchTexteMeta…)
 │   │   └── groupeLogos.js    (mapping sigle → logo PNG importé)
 │   ├── assets/
 │   │   ├── hero.png
@@ -72,6 +74,7 @@ parlsearch/
 ├── scripts/
 │   ├── ingest.js             (ingestion députés + amendements + questions écrites)
 │   ├── ingest-comptes-rendus.js  (ingestion séances syceron XML)
+│   ├── ingest-dossiers.js    (ingestion dossiers législatifs AN — Dossiers_Legislatifs.json.zip)
 │   ├── update-photos.js      (met à jour photo_url → nosdeputes.fr slugs)
 │   ├── upload-photos.js      (télécharge photos + upload Supabase Storage)
 │   └── inspect-xml.mjs       (outil diagnostic format XML syceron)
@@ -114,7 +117,15 @@ parlsearch/
   - Date format Syceron : `"20241106140000000"` → `"2024-11-06"`
   - Ingérés via `scripts/ingest-comptes-rendus.js` (script séparé)
 
-### Phase 3 (à venir)
+### Phase 3 (implémentée)
+- **Dossiers législatifs AN 17e législature**
+  - URL : `https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers/Dossiers_Legislatifs.json.zip`
+  - Format : ZIP de fichiers JSON individuels (1 fichier = 1 dossier)
+  - Champs utilisés : `uid`, `titrePrincipal`, `procedureLibelle`, acteurs co-signataires/rapporteurs (`acteurs.acteur[].acteurRef`)
+  - Ingéré via `scripts/ingest-dossiers.js`
+  - Table : `dossiers_legislatifs`
+
+### Phase 4 (à venir)
 - Données Sénat
 
 ---
@@ -133,14 +144,19 @@ parlsearch/
 
 **`interventions`** : id (`{seanceUid}__{acteurId}___{index}`), parlementaire_id (FK), date_seance, point_titre, texte, texte_recherche (TSVECTOR sur texte)
 
+**`dossiers_legislatifs`** : id (`{dossier_uid}_{parlementaire_id}`), dossier_uid, parlementaire_id (FK), titre, procedure_libelle, legislature (défaut 17), texte_recherche (TSVECTOR généré sur titre)
+
 ### Fonctions RPC
-- `search_parlementaires(keywords TEXT[], orientation_filter TEXT, chambre_filter TEXT)` → parlementaires + `score` (somme amendements + questions + interventions matchés). **SECURITY DEFINER** + `SET statement_timeout TO '30s'` + `SET max_parallel_workers_per_gather TO '2'` — scan exhaustif des 3 tables, contourne le timeout de la clé anon.
-- `truncate_all()` → TRUNCATE des 4 tables en cascade (interventions, questions_ecrites, amendements, parlementaires)
+- `search_parlementaires(keywords TEXT[], orientation_filter TEXT, chambre_filter TEXT)` → parlementaires + `score` (somme amendements + questions + interventions + dossiers matchés) + `dossiers_count`. **SECURITY DEFINER** + `SET statement_timeout TO '30s'` — scan exhaustif des 4 tables, contourne le timeout de la clé anon.
+- `truncate_all()` → TRUNCATE des 5 tables en cascade (dossiers_legislatifs, interventions, questions_ecrites, amendements, parlementaires)
+- `get_top_amendeurs(lim INT)` → top deputés par nombre d'amendements déposés
+- `get_top_questionneurs(lim INT)` → top deputés par nombre de questions écrites déposées
+- `get_top_efficaces(lim INT)` → top deputés par taux d'adoption (min 10 amendements)
 
 ### Indexes
-- `idx_amendements_fts`, `idx_questions_fts`, `idx_interventions_fts` : GIN sur `texte_recherche`
+- `idx_amendements_fts`, `idx_questions_fts`, `idx_interventions_fts`, `idx_dossiers_fts` : GIN sur `texte_recherche`
 - `idx_amendements_trgm_objet`, `idx_questions_trgm_rubrique` : GIN trigram
-- `idx_amendements_parlementaire`, `idx_questions_parlementaire`, `idx_interventions_parlementaire` : B-tree sur `parlementaire_id`
+- `idx_amendements_parlementaire`, `idx_questions_parlementaire`, `idx_interventions_parlementaire`, `idx_dossiers_parlementaire` : B-tree sur `parlementaire_id`
 - Index sur `orientation` et `chambre` (filtres)
 
 ---
@@ -161,17 +177,19 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 ## Décisions d'architecture
 
 1. **Clé Anthropic côté serveur** : l'appel à l'API Anthropic passe par une Edge Function Supabase (`expand-query`). La clé n'est jamais exposée dans le bundle JS.
-2. **Scoring** : somme (amendements + questions + interventions matchés), normalisé (max = 100%) côté frontend dans `search.js`.
+2. **Scoring** : somme (amendements + questions + interventions + dossiers matchés), normalisé (max = 100%) côté frontend dans `search.js`.
 3. **Fallback expansion** : si l'Edge Function échoue, `anthropic.js` renvoie simplement la requête originale comme seul mot-clé.
 4. **Photos parlementaires** : `photo_url` en base pointe vers Supabase Storage (bucket `photos`, public). Chargées via `upload-photos.js` depuis nosdeputes.fr. Fallback initiales + couleur du groupe dans `ParlementaireCard`.
 5. **Proxy CORS `an-proxy`** : Edge Function servant de proxy pour les photos AN/nosdeputes.fr (`?type=photo&id=PA…` ou `?type=photo&slug=prenom-nom`) et les métadonnées opendata (`?type=opendata&ref=…`). Évite les blocages CORS côté frontend.
-6. **Panneau détail** : clic sur une carte → `AmendementPanel` (slide-in droite). Charge en parallèle amendements + questions + interventions du député filtrés par les mots-clés. 3 onglets. Fermeture par clic backdrop ou Échap.
+6. **Panneau détail** : clic sur une carte → `AmendementPanel` (slide-in droite). Charge en parallèle amendements + questions + interventions + dossiers du député filtrés par les mots-clés. 4 onglets. Fermeture par clic backdrop ou Échap.
 7. **Titres des textes en live** : fetché via `an-proxy` (`?type=opendata&ref=…`) à l'ouverture du panneau, mis en cache global (Map) pour éviter les appels dupliqués.
 8. **Logos groupes** : `groupeLogos.js` mappe les sigles vers des PNG depuis `src/assets/Logos/`. Groupes couverts : LFI-NFP, SOC, EcoS, LIOT, EPR, HOR, LR, RN, UDR, DR, Dem. Fallback initiales colorées pour GDR et NI.
 9. **Nettoyage base** : `TRUNCATE CASCADE` via RPC `truncate_all()` — le DELETE `.neq('id','')` timeout sur 100k+ rows.
 10. **Modale compte rendu de séance** : bouton "Compte rendu" dans l'onglet Séance du panneau → fetch toutes les interventions du même `seanceUid` via plage `gte`/`lt` (`.gte('id', seanceUid + '__').lt('id', seanceUid + '~')`). NE PAS utiliser `.like()` : Supabase encode `%` en `%25` dans l'URL et PostgREST ne le reconnaît plus comme wildcard LIKE. L'intervention du député est surlignée et scrollée en vue.
 11. **Modale question écrite** : bouton "Lire" → affiche le texte complet déjà chargé (pas de fetch supplémentaire). Le lien "AN ↗" est conservé en parallèle.
 12. **Limites fetch panel** : `fetchAmendements`, `fetchQuestionsEcrites`, `fetchInterventions` sont plafonnées à 500 résultats (au lieu de 50/100) pour aligner les compteurs carte ↔ panneau.
+13. **Vue thématique transversale (`DocView`)** : intégrée directement dans `ResultsList.jsx`. Déclenchée via `handleTotalClick` (clic sur les totaux dans `KeywordsDisplay` ou les résultats). Passe `null` comme `parlementaireId` → retourne tous les documents matchant les keywords sur 4 types (amendements, questions, interventions, dossiers). Le nom du parlementaire est résolu via `parlIndex` (map `id → parlementaire` chargé au moment de la recherche via `fetchAllParlementaires()`). Pagination client-side (50 par page, bouton "Afficher X de plus"). Remplace l'ancien `SubjectPanel`.
+14. **Page d'accueil (`LandingHero`)** : affichée avant toute recherche. 3 podiums (top amendeurs, top questionneurs, top efficaces) via RPC dédiées. 5 suggestions de thématiques cliquables. Se masque dès qu'une recherche est lancée.
 
 ---
 
@@ -199,10 +217,20 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 - [x] Modale question écrite complète (onglet Questions) — texte intégral + lien AN ↗
 - [x] RPC `search_parlementaires` : SECURITY DEFINER + timeout 30s + scan exhaustif (plus de LIMIT intermédiaire)
 - [x] Limites fetch panel corrigées : 500 pour amendements, questions et interventions
+- [x] `SubjectPanel` remplacé par `DocView` (intégrée dans `ResultsList`) : vue thématique inline, résolution des noms via `parlIndex`, pagination 50/page
+- [x] `fetchAmendements` / `fetchQuestionsEcrites` / `fetchInterventions` / `fetchDossiers` : `parlementaireId` optionnel (filtre `.eq()` conditionnel)
+- [x] `fetchAllParlementaires()` : chargé en parallèle de la recherche pour alimenter `parlIndex`
+- [x] Table `dossiers_legislatifs` : 4e source d'activité parlementaire
+- [x] `scripts/ingest-dossiers.js` : ingestion dossiers législatifs AN (Dossiers_Legislatifs.json.zip)
+- [x] RPC `search_parlementaires` mise à jour : inclut `dossiers_count` dans le score + DROP/CREATE (incompatible type retour)
+- [x] RPC utilitaires : `get_top_amendeurs`, `get_top_questionneurs`, `get_top_efficaces`
+- [x] `LandingHero` : page d'accueil avec podiums + suggestions de thématiques
+- [x] `panelUtils.jsx` : utilitaires mutualisés pour les vues documents (highlight, URL AN, formatDate, fetchTexteMeta)
+- [x] `AmendementPanel` : 4e onglet Dossiers
 
 ### Reste à faire ⏳
 - [ ] Déploiement Vercel (frontend)
-- [ ] Phase 3 : données Sénat
+- [ ] Phase 4 : données Sénat
 
 ---
 

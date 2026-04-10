@@ -57,7 +57,7 @@ const COULEUR_MAP = {
 // ─── Client Supabase ─────────────────────────────────────────────────────────
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ Variables manquantes : VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY requis dans .env')
+  console.error(' Variables manquantes : VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY requis dans .env')
   process.exit(1)
 }
 
@@ -109,7 +109,7 @@ function downloadZip(url, tmpName) {
   const tmpPath = `${TMP}\\${tmpName}`.replace(/\//g, '\\')
   // Supprimer tout fichier partiel d'une tentative précédente
   if (existsSync(tmpPath)) unlinkSync(tmpPath)
-  console.log(`⬇️  Téléchargement : ${url.split('/').pop()}`)
+  console.log(`  Téléchargement : ${url.split('/').pop()}`)
   execFileSync('curl.exe', [
     '-L', '-A', 'Mozilla/5.0',
     '--retry', '5',
@@ -141,12 +141,12 @@ async function batchUpsert(table, rows) {
     const batch = rows.slice(i, i + BATCH_SIZE)
     const { error } = await supabase.from(table).upsert(batch, { onConflict: 'id' })
     if (error) {
-      console.error(`\n❌ Erreur upsert ${table} (batch ${i / BATCH_SIZE + 1}):`, error.message)
+      console.error(`\n Erreur upsert ${table} (batch ${i / BATCH_SIZE + 1}):`, error.message)
     } else {
-      process.stdout.write(`  ✓ ${table} : ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}\r`)
+      process.stdout.write(`   ${table} : ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}\r`)
     }
   }
-  console.log(`  ✓ ${table} : ${rows.length}/${rows.length} — OK`)
+  console.log(`   ${table} : ${rows.length}/${rows.length} — OK`)
 }
 
 // ─── Phase 1 : Députés ───────────────────────────────────────────────────────
@@ -307,26 +307,26 @@ async function parseQuestionsEcrites(tmpPath, deputesSet) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🏛️  Plébis — Ingestion AN 17e législature\n')
+  console.log('  Plébis — Ingestion AN 17e législature\n')
 
   // ── 1. Vider les tables ──
-  console.log('🗑️  Nettoyage des tables existantes…')
+  console.log('  Nettoyage des tables existantes…')
   const { error: truncateError } = await supabase.rpc('truncate_all')
   if (truncateError) {
-    console.error('❌ Erreur TRUNCATE :', truncateError.message)
+    console.error(' Erreur TRUNCATE :', truncateError.message)
     process.exit(1)
   }
   console.log('    Tables vidées.\n')
 
   // ── 2. Députés ──
-  console.log('👤 Téléchargement des députés…')
+  console.log(' Téléchargement des députés…')
   let deputesTmp
   try {
     deputesTmp = downloadZip(DEPUTES_URL, 'deputes.zip')
   } catch (err) {
-    console.error('❌ Erreur députés :', err.message); process.exit(1)
+    console.error(' Erreur députés :', err.message); process.exit(1)
   }
-  console.log('📦 Parsing des députés…')
+  console.log(' Parsing des députés…')
   const deputes = await parseDeputes(deputesTmp)
   unlinkSync(deputesTmp)
   console.log(`    ${deputes.length} députés parsés\n`)
@@ -334,42 +334,42 @@ async function main() {
   const deputesSet = new Set(deputes.map(d => d.id))
 
   // ── 3. Amendements ──
-  console.log('📜 Téléchargement des amendements…')
+  console.log(' Téléchargement des amendements…')
   let amendTmp
   try {
     amendTmp = downloadZip(AMENDEMENTS_URL, 'amendements.zip')
   } catch (err) {
-    console.error('❌ Erreur amendements :', err.message); process.exit(1)
+    console.error(' Erreur amendements :', err.message); process.exit(1)
   }
-  console.log('📦 Parsing des amendements…')
+  console.log(' Parsing des amendements…')
   const { amendements, skipped } = await parseAmendements(amendTmp, deputesSet)
   unlinkSync(amendTmp)
   console.log(`    ${amendements.length} amendements parsés (${skipped} ignorés)\n`)
 
   // ── 4. Questions écrites ──
-  console.log('❓ Téléchargement des questions écrites…')
+  console.log(' Téléchargement des questions écrites…')
   let questionsTmp
   try {
     questionsTmp = downloadZip(QUESTIONS_URL, 'questions.zip')
   } catch (err) {
-    console.error('❌ Erreur questions écrites :', err.message); process.exit(1)
+    console.error(' Erreur questions écrites :', err.message); process.exit(1)
   }
-  console.log('📦 Parsing des questions écrites…')
+  console.log(' Parsing des questions écrites…')
   const { questions, skipped: skippedQ } = await parseQuestionsEcrites(questionsTmp, deputesSet)
   unlinkSync(questionsTmp)
   console.log(`    ${questions.length} questions parsées (${skippedQ} ignorées)\n`)
 
   // ── 5. Insertion ──
-  console.log('⬆️  Insertion dans Supabase…')
+  console.log('  Insertion dans Supabase…')
   await batchUpsert('parlementaires', deputes)
   await batchUpsert('amendements', amendements)
   await batchUpsert('questions_ecrites', questions)
 
-  console.log('\n✅ Ingestion terminée.')
+  console.log('\n Ingestion terminée.')
   console.log(`   ${deputes.length} députés | ${amendements.length} amendements | ${questions.length} questions écrites`)
 }
 
 main().catch((err) => {
-  console.error('❌ Erreur fatale :', err)
+  console.error(' Erreur fatale :', err)
   process.exit(1)
 })

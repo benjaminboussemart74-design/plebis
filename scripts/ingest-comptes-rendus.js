@@ -42,7 +42,7 @@ const CR_URL =
 // ─── Client Supabase ─────────────────────────────────────────────────────────
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ Variables manquantes : VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY requis dans .env')
+  console.error(' Variables manquantes : VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY requis dans .env')
   process.exit(1)
 }
 
@@ -134,7 +134,7 @@ function collectParagraphes(points, sommaireMap, inheritedTitre = null) {
 function downloadZip(url, tmpName) {
   const tmpPath = (TMP + '/' + tmpName).replace(/\//g, '\\')
   if (existsSync(tmpPath)) unlinkSync(tmpPath)
-  console.log(`⬇️  Téléchargement : ${url.split('/').pop()}`)
+  console.log(`  Téléchargement : ${url.split('/').pop()}`)
   execFileSync('curl.exe', [
     '-L', '-A', 'Mozilla/5.0',
     '--retry', '5',
@@ -178,7 +178,7 @@ async function loadParlementaireIds() {
     if (data.length < PAGE) break
     from += PAGE
   }
-  console.log(`👤 ${ids.size} parlementaires chargés depuis la base`)
+  console.log(` ${ids.size} parlementaires chargés depuis la base`)
   return ids
 }
 
@@ -238,9 +238,9 @@ async function batchUpsert(table, rows) {
     const batch = rows.slice(i, i + BATCH_SIZE)
     const { error } = await supabase.from(table).upsert(batch, { onConflict: 'id' })
     if (error) {
-      console.error(`  ❌ Erreur batch ${i}–${i + batch.length}:`, error.message)
+      console.error(`   Erreur batch ${i}–${i + batch.length}:`, error.message)
     } else {
-      process.stdout.write(`\r  ✓ ${Math.min(i + BATCH_SIZE, rows.length)} / ${rows.length}`)
+      process.stdout.write(`\r   ${Math.min(i + BATCH_SIZE, rows.length)} / ${rows.length}`)
     }
   }
   if (rows.length > 0) console.log()
@@ -249,7 +249,7 @@ async function batchUpsert(table, rows) {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('\n🏛️  Ingestion des comptes rendus de séance (AN 17e législature)\n')
+  console.log('\n  Ingestion des comptes rendus de séance (AN 17e législature)\n')
 
   const zipPath = (TMP + '/syseron.xml.zip').replace(/\//g, '\\')
 
@@ -258,14 +258,14 @@ async function main() {
     if (!existsSync(zipPath)) {
       downloadZip(CR_URL, 'syseron.xml.zip')
     } else {
-      console.log('📦 ZIP déjà présent, téléchargement ignoré')
+      console.log(' ZIP déjà présent, téléchargement ignoré')
     }
 
     // 2. Chargement des parlementaires existants
     const parlementaireIds = await loadParlementaireIds()
 
     // 3. Nettoyage de la table
-    console.log('🗑️  Suppression des interventions existantes…')
+    console.log('  Suppression des interventions existantes…')
     const { error: delErr } = await supabase
       .from('interventions')
       .delete()
@@ -273,7 +273,7 @@ async function main() {
     if (delErr) console.warn('  Avertissement DELETE:', delErr.message)
 
     // 4. Itération sur les fichiers XML du ZIP
-    console.log('📊 Extraction des interventions…')
+    console.log(' Extraction des interventions…')
     let totalSeances = 0
     let totalInterventions = 0
     let buffer = []
@@ -306,7 +306,7 @@ async function main() {
       await batchUpsert('interventions', buffer)
     }
 
-    console.log(`\n✅ Ingestion terminée : ${totalSeances} séances, ${totalInterventions} interventions`)
+    console.log(`\n Ingestion terminée : ${totalSeances} séances, ${totalInterventions} interventions`)
 
   } finally {
     if (existsSync(zipPath)) unlinkSync(zipPath)
@@ -314,6 +314,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('❌ Erreur fatale:', err)
+  console.error(' Erreur fatale:', err)
   process.exit(1)
 })
