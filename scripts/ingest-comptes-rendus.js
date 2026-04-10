@@ -154,7 +154,11 @@ function downloadZip(url, tmpName) {
 
 // Itère sur les entrées XML d'un ZIP — une entrée en mémoire à la fois
 async function* zipXmlEntries(tmpPath) {
-  const stream = createReadStream(tmpPath).pipe(unzipper.Parse({ forceStream: true }))
+  const readStream = createReadStream(tmpPath)
+  const stream = readStream.pipe(unzipper.Parse({ forceStream: true }))
+  // Propage les erreurs du ReadStream vers le stream unzipper pour que
+  // le `for await` puisse les attraper proprement (évite l'unhandled 'error' event)
+  readStream.on('error', err => stream.destroy(err))
   for await (const entry of stream) {
     if (entry.path.endsWith('.xml')) {
       const buf = await entry.buffer()

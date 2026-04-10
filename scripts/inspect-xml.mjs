@@ -1,6 +1,8 @@
 import 'dotenv/config'
 import { createReadStream, existsSync } from 'fs'
 import { execFileSync } from 'child_process'
+import { join } from 'path'
+import { tmpdir } from 'os'
 import unzipper from 'unzipper'
 import { XMLParser } from 'fast-xml-parser'
 
@@ -11,13 +13,13 @@ const parser = new XMLParser({
   isArray: (name) => ['point','paragraphe','alinea','texte'].includes(name),
 })
 
-const TMP = process.env.TEMP || '/tmp'
-const zipPath = TMP.replace(/\//g,'\\') + '\\syseron.xml.zip'
+const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
+const zipPath = join(tmpdir(), 'syseron.xml.zip')
 const CR_URL = 'https://data.assemblee-nationale.fr/static/openData/repository/17/vp/syceronbrut/syseron.xml.zip'
 
 if (!existsSync(zipPath)) {
   console.log('Téléchargement…')
-  execFileSync('curl.exe', ['-L', '-A', 'Mozilla/5.0', '--retry', '3', '-o', zipPath, CR_URL], { stdio: 'inherit' })
+  execFileSync(CURL, ['-L', '-A', 'Mozilla/5.0', '--retry', '3', '-o', zipPath, CR_URL], { stdio: 'inherit' })
 }
 
 let count = 0
