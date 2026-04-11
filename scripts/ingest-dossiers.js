@@ -26,7 +26,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const BATCH_SIZE = 500
 const TMP = process.platform === 'win32' ? process.env.TEMP || process.env.TMP || 'C:\\Temp' : '/tmp'
-const DOSSIERS_URL = 'https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers/Dossiers_Legislatifs.json.zip'
+const DOSSIERS_URL = 'https://data.assemblee-nationale.fr/static/openData/repository/17/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip'
 const CURL = process.platform === 'win32' ? 'curl.exe' : 'curl'
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
