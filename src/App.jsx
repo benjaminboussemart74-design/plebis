@@ -6,6 +6,7 @@ import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
 import LandingHero from './components/LandingHero'
 import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
+import { expandQuery } from './lib/anthropic'
 import styles from './App.module.css'
 
 export default function App() {
@@ -36,30 +37,22 @@ export default function App() {
     setActiveDocView(null)
 
     try {
+      // Expansion IA une seule fois, partagée entre les deux chambres
+      const kws = useAI ? await expandQuery(query) : [query]
+      setKeywords(kws)
+
       const [[resAN, resSenat], allParls] = await Promise.all([
         Promise.allSettled([
-          searchParlementaires({ query, orientation, chambre: 'AN', useAI }),
-          searchParlementaires({ query, orientation, chambre: 'Senat', useAI }),
+          searchParlementaires({ query, orientation, chambre: 'AN', keywords: kws }),
+          searchParlementaires({ query, orientation, chambre: 'Senat', keywords: kws }),
         ]),
         fetchAllParlementaires(),
       ])
 
-      if (resAN.status === 'fulfilled') {
-        setKeywords(resAN.value.keywords)
-        setResultsAN(resAN.value.results)
-      } else {
-        setResultsAN([])
-      }
+      setResultsAN(resAN.status === 'fulfilled' ? resAN.value.results : [])
       setLoadingAN(false)
-
-      if (resSenat.status === 'fulfilled') {
-        if (resAN.status !== 'fulfilled') setKeywords(resSenat.value.keywords)
-        setResultsSenat(resSenat.value.results)
-      } else {
-        setResultsSenat([])
-      }
+      setResultsSenat(resSenat.status === 'fulfilled' ? resSenat.value.results : [])
       setLoadingSenat(false)
-
       setSearched(true)
       setParlIndex(Object.fromEntries(allParls.map(p => [p.id, p])))
     } catch (err) {
@@ -69,6 +62,7 @@ export default function App() {
       setKeywords([])
       setLoadingAN(false)
       setLoadingSenat(false)
+      setSearched(true)
     }
   }
 

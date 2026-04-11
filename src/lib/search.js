@@ -156,9 +156,9 @@ export async function fetchAmendements(parlementaireId, keywords) {
  * @param {boolean} [params.useAI=true] — si false, recherche avec la requête brute uniquement
  * @returns {Promise<{ keywords: string[], results: Array }>}
  */
-export async function searchParlementaires({ query, orientation, chambre, useAI = true }) {
-  // 1. Expansion IA (optionnelle)
-  const keywords = useAI ? await expandQuery(query) : [query]
+export async function searchParlementaires({ query, orientation, chambre, useAI = true, keywords: preExpanded }) {
+  // 1. Expansion IA (optionnelle) — si des keywords pré-calculés sont fournis, on les réutilise
+  const keywords = preExpanded ?? (useAI ? await expandQuery(query) : [query])
 
   // 2. Recherche Supabase
   const { data, error } = await supabase.rpc('search_parlementaires', {
