@@ -114,15 +114,21 @@ function downloadZip(url, tmpName) {
   if (existsSync(tmpPath)) unlinkSync(tmpPath)
   console.log(`  Téléchargement : ${url.split('/').pop()}`)
   execFileSync(CURL, [
-    '-L', '-A', 'Mozilla/5.0',
+    '-L', '--fail',
+    '-A', 'Mozilla/5.0',
     '--retry', '5',
     '--retry-delay', '3',
     '--retry-connrefused',
+    '--max-time', '300',
+    '--write-out', '\n  HTTP %{http_code} — %{size_download} octets',
     '-o', tmpPath,
     url,
   ], { stdio: 'inherit' })
   const size = statSync(tmpPath).size
-  console.log(`    ${(size / 1024 / 1024).toFixed(1)} Mo téléchargés`)
+  console.log(`  ${(size / 1024 / 1024).toFixed(1)} Mo téléchargés`)
+  if (size < 1024) {
+    throw new Error(`Fichier trop petit (${size} octets) — le serveur a probablement renvoyé une erreur. Vérifiez l'URL : ${url}`)
+  }
   return tmpPath
 }
 
