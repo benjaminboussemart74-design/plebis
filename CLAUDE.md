@@ -29,6 +29,7 @@ https://github.com/benjaminboussemart74-design/plebis
 | Couche | Outil |
 |---|---|
 | Frontend | React + Vite (CSS Modules) |
+| Export | SheetJS (`xlsx`) — génération `.xlsx` côté client |
 | Base de données | Supabase (PostgreSQL, projet `mncyqaovonldvfzqmric`) |
 | Recherche | `pg_trgm` + `tsvector` French FTS |
 | IA (expansion requête) | Anthropic `claude-sonnet-4-20250514` via Edge Function |
@@ -56,6 +57,7 @@ parlsearch/
 │   │   ├── anthropic.js      (appel Edge Function expand-query)
 │   │   ├── search.js         (orchestration recherche + scoring + fetch* 4 sources)
 │   │   ├── panelUtils.jsx    (utilitaires partagés panel : hl, anUrl, amendNum, formatDate, fetchTexteMeta…)
+│   │   ├── exportExcel.js    (export .xlsx parlementaire — 3 onglets, hyperliens AN)
 │   │   └── groupeLogos.js    (mapping sigle → logo PNG importé)
 │   ├── assets/
 │   │   ├── hero.png
@@ -190,6 +192,7 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 12. **Limites fetch panel** : `fetchAmendements`, `fetchQuestionsEcrites`, `fetchInterventions` sont plafonnées à 500 résultats (au lieu de 50/100) pour aligner les compteurs carte ↔ panneau.
 13. **Vue thématique transversale (`DocView`)** : intégrée directement dans `ResultsList.jsx`. Déclenchée via `handleTotalClick` (clic sur les totaux dans `KeywordsDisplay` ou les résultats). Passe `null` comme `parlementaireId` → retourne tous les documents matchant les keywords sur 4 types (amendements, questions, interventions, dossiers). Le nom du parlementaire est résolu via `parlIndex` (map `id → parlementaire` chargé au moment de la recherche via `fetchAllParlementaires()`). Pagination client-side (50 par page, bouton "Afficher X de plus"). Remplace l'ancien `SubjectPanel`.
 14. **Page d'accueil (`LandingHero`)** : affichée avant toute recherche. 3 podiums (top amendeurs, top questionneurs, top efficaces) via RPC dédiées. 5 suggestions de thématiques cliquables. Se masque dès qu'une recherche est lancée.
+15. **Export Excel** : `src/lib/exportExcel.js` exporte via SheetJS (`xlsx`) un fichier `.xlsx` à 3 onglets (Amendements, Questions écrites, Interventions en séance) avec hyperliens cliquables colonne "Lien AN" (`cell.l.Target`). Le numéro d'amendement est extrait via `N(\d+)$`. Le nom de fichier est slugifié (minuscules, sans accents, espaces → `_`). Bouton dans le header du panneau, désactivé pendant le chargement.
 
 ---
 
@@ -227,6 +230,7 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 - [x] `LandingHero` : page d'accueil avec podiums + suggestions de thématiques
 - [x] `panelUtils.jsx` : utilitaires mutualisés pour les vues documents (highlight, URL AN, formatDate, fetchTexteMeta)
 - [x] `AmendementPanel` : 4e onglet Dossiers
+- [x] Export Excel (`src/lib/exportExcel.js`) : bouton "Exporter Excel" dans le header du panneau — génère un `.xlsx` (SheetJS) avec 3 onglets (Amendements, Questions écrites, Interventions en séance), hyperliens AN cliquables, nom de fichier `plebis_{prenom}_{nom}_{YYYY-MM-DD}.xlsx`
 
 ### Reste à faire ⏳
 - [ ] Déploiement Vercel (frontend)

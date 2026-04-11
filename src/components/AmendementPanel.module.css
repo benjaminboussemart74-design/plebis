@@ -72,6 +72,29 @@
   display: block;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.btnExport {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-bg-card);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-btn);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+.btnExport:hover:not(:disabled) { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btnExport:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .close {
   background: none;
   border: none;
@@ -466,6 +489,44 @@
   background: #E8F0E8;
   padding: 2px 6px;
   border-radius: 2px;
+}
+
+/* ── Groupes par texte / rubrique / point / procédure ──────── */
+.groupHeader {
+  background: var(--color-bg-sidebar);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-light);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+.groupHeader:hover { background: var(--color-bg-hover); }
+
+.groupHeaderRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.groupChevron {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.groupStats {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  padding-left: calc(10px + var(--space-2));
 }
 
 .dossierTitre {

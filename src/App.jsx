@@ -26,7 +26,7 @@ export default function App() {
   const [activeDocView, setActiveDocView] = useState(null)
   const [parlIndex, setParlIndex] = useState({})
 
-  async function handleSearch({ query, orientation, chambre }) {
+  async function handleSearch({ query, orientation, chambre, useAI }) {
     setLoading(true)
     setError(null)
     setLastQuery(query)
@@ -34,7 +34,7 @@ export default function App() {
 
     try {
       const [{ keywords: kws, results: res }, allParls] = await Promise.all([
-        searchParlementaires({ query, orientation, chambre }),
+        searchParlementaires({ query, orientation, chambre, useAI }),
         fetchAllParlementaires(),
       ])
       setKeywords(kws)

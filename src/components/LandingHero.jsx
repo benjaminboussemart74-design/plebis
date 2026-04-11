@@ -1,15 +1,49 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { fetchTopAmendeurs, fetchTopQuestionneurs, fetchTopEfficaces } from '../lib/search'
 import { getGroupeLogo } from '../lib/groupeLogos'
 import s from './LandingHero.module.css'
 
-const SUGGESTIONS = [
-  'Logement',
-  'Intelligence artificielle',
-  'Énergie nucléaire',
-  'Immigration',
-  'Retraites',
+const SUGGESTION_GROUPS = [
+  ['transition énergétique', 'immigration', 'réforme des retraites', 'intelligence artificielle', 'logement social'],
+  ['souveraineté industrielle', 'dette publique', 'violences conjugales', 'agriculture biologique', 'désinformation'],
+  ['santé mentale', 'déserts médicaux', 'nucléaire civil', 'fin de vie', 'fracture numérique'],
+  ['sécurité intérieure', 'laïcité', 'féminisme', 'commerce équitable', 'chômage des jeunes'],
 ]
+
+const STATS = [
+  { value: 577,   label: 'députés' },
+  { value: 99583, label: 'amendements' },
+  { value: 12400, label: 'questions écrites' },
+  { value: 34700, label: 'interventions en séance' },
+]
+
+function useCountUp(target, duration = 1600) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    let start = null
+    let raf
+    function step(timestamp) {
+      if (!start) start = timestamp
+      const progress = Math.min((timestamp - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(eased * target))
+      if (progress < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration])
+  return count
+}
+
+function StatItem({ value, label }) {
+  const count = useCountUp(value)
+  return (
+    <div className={s.statItem}>
+      <span className={s.statNum}>{count.toLocaleString('fr-FR')}</span>
+      <span className={s.statLabel}>{label}</span>
+    </div>
+  )
+}
 
 function Avatar({ nom, prenom, photo_url, couleur_groupe, className }) {
   const [imgError, setImgError] = useState(false)
@@ -136,11 +170,30 @@ function RankingModal({ title, items, metricFn, onClose }) {
 }
 
 export default function LandingHero({ onSearch }) {
+  const [displayIndex, setDisplayIndex] = useState(0)
+  const [fading, setFading] = useState(false)
   const [amendeurs, setAmendeurs] = useState([])
   const [questionneurs, setQuestionneurs] = useState([])
   const [efficaces, setEfficaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(null) // null | 'amendeurs' | 'questionneurs' | 'efficaces'
+  const [modal, setModal] = useState(null)
+  const intervalRef = useRef(null)
+  const fadeTimerRef = useRef(null)
+
+  // Rotation avec fondu : fade-out → swap → fade-in
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setFading(true)
+      fadeTimerRef.current = setTimeout(() => {
+        setDisplayIndex(i => (i + 1) % SUGGESTION_GROUPS.length)
+        setFading(false)
+      }, 250)
+    }, 4500)
+    return () => {
+      clearInterval(intervalRef.current)
+      clearTimeout(fadeTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -182,22 +235,35 @@ export default function LandingHero({ onSearch }) {
   ]
 
   const activeModal = columns.find(c => c.key === modal)
+  const currentGroup = SUGGESTION_GROUPS[displayIndex]
 
   return (
     <div className={s.hero}>
-      <div className={s.suggestions}>
+      {/* Suggestions tournantes */}
+      <div className={s.suggestionsSection}>
         <span className={s.suggestionsLabel}>Explorer&nbsp;:</span>
-        {SUGGESTIONS.map(theme => (
-          <button
-            key={theme}
-            className={s.suggestionChip}
-            onClick={() => onSearch({ query: theme })}
-          >
-            {theme}
-          </button>
+        <div className={`${s.suggestionsGrid} ${fading ? s.suggestionsGridFading : ''}`}>
+          {currentGroup.map((theme, i) => (
+            <button
+              key={theme}
+              className={s.pill}
+              style={{ animationDelay: `${i * 40}ms` }}
+              onClick={() => onSearch({ query: theme, orientation: null, chambre: null })}
+            >
+              {theme}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Compteurs animés */}
+      <div className={s.statsBar}>
+        {STATS.map(({ value, label }) => (
+          <StatItem key={label} value={value} label={label} />
         ))}
       </div>
 
+      {/* Classements */}
       <div className={s.rankingSection}>
         <div className={s.rankingTitle}>Classements — 17e législature</div>
         <div className={s.columns}>

@@ -254,9 +254,10 @@ async function batchUpsert(table, rows) {
 async function main() {
   console.log('\n  Ingestion des comptes rendus de séance (AN 17e législature)\n')
 
+  let zipPath
   try {
     // 1. Téléchargement — toujours re-télécharger en CI pour avoir les données fraîches
-    const zipPath = downloadZip(CR_URL, 'syseron.xml.zip')
+    zipPath = downloadZip(CR_URL, 'syseron.xml.zip')
 
     if (!existsSync(zipPath)) {
       throw new Error(`Fichier introuvable après téléchargement : ${zipPath}`)

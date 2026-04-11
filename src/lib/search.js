@@ -145,7 +145,7 @@ export async function fetchAmendements(parlementaireId, keywords) {
 
 /**
  * Recherche principale.
- * 1. Expansion IA de la requête → keywords[]
+ * 1. Expansion IA de la requête → keywords[] (sautée si useAI === false)
  * 2. Appel RPC Supabase search_parlementaires
  * 3. Normalisation des scores (max = 100%)
  *
@@ -153,11 +153,12 @@ export async function fetchAmendements(parlementaireId, keywords) {
  * @param {string} params.query
  * @param {string|null} params.orientation — 'gauche' | 'centre' | 'droite' | null
  * @param {string|null} params.chambre — 'AN' | 'Senat' | null
+ * @param {boolean} [params.useAI=true] — si false, recherche avec la requête brute uniquement
  * @returns {Promise<{ keywords: string[], results: Array }>}
  */
-export async function searchParlementaires({ query, orientation, chambre }) {
-  // 1. Expansion IA
-  const keywords = await expandQuery(query)
+export async function searchParlementaires({ query, orientation, chambre, useAI = true }) {
+  // 1. Expansion IA (optionnelle)
+  const keywords = useAI ? await expandQuery(query) : [query]
 
   // 2. Recherche Supabase
   const { data, error } = await supabase.rpc('search_parlementaires', {

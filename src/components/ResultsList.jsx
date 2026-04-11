@@ -175,33 +175,38 @@ function GroupSummary({ groupStats, activeGroup, onFilter }) {
   if (!groupStats || groupStats.length === 0) return null
 
   return (
-    <div className={styles.groupStrip}>
-      {groupStats.map(g => {
-        const logo = getGroupeLogo(g.sigle)
-        return (
-        <div
-          key={g.sigle}
-          className={`${styles.groupBlock} ${activeGroup === g.sigle ? styles.groupBlockActive : ''}`}
-          style={{ '--group-color': g.couleur || '#9A9A92' }}
-        >
-          <div className={styles.groupColorBar} />
-          {logo
-            ? <img src={logo} alt={g.sigle} className={styles.groupLogo} />
-            : <div className={styles.groupSigle}>{g.sigle}</div>
-          }
-          <div className={styles.groupStat}>{g.count} député{g.count > 1 ? 's' : ''}</div>
-          <div className={styles.groupStat}>{g.totalScore} action{g.totalScore > 1 ? 's' : ''}</div>
-          <div className={styles.groupStat}>{g.pct} % de l'activité</div>
-          <button
-            className={styles.groupFilterBtn}
-            onClick={() => onFilter(activeGroup === g.sigle ? null : g.sigle)}
+    <>
+      <div className={styles.groupStrip}>
+        {groupStats.map(g => {
+          const logo = getGroupeLogo(g.sigle)
+          return (
+          <div
+            key={g.sigle}
+            className={`${styles.groupBlock} ${activeGroup === g.sigle ? styles.groupBlockActive : ''}`}
+            style={{ '--group-color': g.couleur || '#9A9A92' }}
           >
-            {activeGroup === g.sigle ? 'Tous les groupes' : 'Explorer ce groupe'}
-          </button>
-        </div>
-        )
-      })}
-    </div>
+            <div className={styles.groupColorBar} />
+            {logo
+              ? <img src={logo} alt={g.sigle} className={styles.groupLogo} />
+              : <div className={styles.groupSigle}>{g.sigle}</div>
+            }
+            <div className={styles.groupStat}>{g.count} député{g.count > 1 ? 's' : ''}</div>
+            <div className={styles.groupStat}>{g.totalScore} action{g.totalScore > 1 ? 's' : ''}</div>
+            <div className={styles.groupStat}>{g.pct} % de l'activité</div>
+            <button
+              className={styles.groupFilterBtn}
+              onClick={() => onFilter(activeGroup === g.sigle ? null : g.sigle)}
+            >
+              {activeGroup === g.sigle ? 'Tous les groupes' : 'Explorer ce groupe'}
+            </button>
+          </div>
+          )
+        })}
+      </div>
+      <p className={styles.groupMethodNote}>
+        Une <strong>action</strong> = un document parlementaire (amendement, question écrite, intervention en séance ou dossier législatif) lié aux mots-clés de la recherche. Le <strong>% de l'activité</strong> représente la part du groupe dans le total des actions trouvées. Données : AN 17e législature.
+      </p>
+    </>
   )
 }
 

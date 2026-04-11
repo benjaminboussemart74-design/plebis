@@ -1,30 +1,23 @@
 import { useState } from 'react'
 import styles from './SearchBar.module.css'
 
-const ORIENTATIONS = [
-  { value: '', label: 'Toutes orientations' },
-  { value: 'gauche', label: 'Gauche' },
-  { value: 'centre', label: 'Centre' },
-  { value: 'droite', label: 'Droite' },
-]
-
-const CHAMBRES = [
-  { value: '', label: 'Toutes chambres' },
-  { value: 'AN', label: 'Assemblée nationale' },
-  { value: 'Senat', label: 'Sénat' },
-]
+const AI_LABELS = {
+  on:  { label: 'Expansion IA', desc: 'L\'IA génère des synonymes et acronymes législatifs pour élargir la recherche.' },
+  off: { label: 'Recherche exacte', desc: 'Recherche sur les mots saisis uniquement, sans interprétation.' },
+}
 
 export default function SearchBar({ onSearch, loading }) {
   const [query, setQuery] = useState('')
-  const [orientation, setOrientation] = useState('')
-  const [chambre, setChambre] = useState('')
+  const [useAI, setUseAI] = useState(true)
 
   function handleSubmit(e) {
     e.preventDefault()
     const q = query.trim()
     if (!q) return
-    onSearch({ query: q, orientation: orientation || null, chambre: chambre || null })
+    onSearch({ query: q, orientation: null, chambre: null, useAI })
   }
+
+  const current = useAI ? AI_LABELS.on : AI_LABELS.off
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -47,28 +40,17 @@ export default function SearchBar({ onSearch, loading }) {
         </button>
       </div>
 
-      <div className={styles.filters}>
-        <select
-          className={styles.select}
-          value={orientation}
-          onChange={(e) => setOrientation(e.target.value)}
+      <div className={styles.aiRow}>
+        <button
+          type="button"
+          className={`${styles.aiToggle} ${useAI ? styles.aiOn : styles.aiOff}`}
+          onClick={() => setUseAI(!useAI)}
           disabled={loading}
         >
-          {ORIENTATIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        <select
-          className={styles.select}
-          value={chambre}
-          onChange={(e) => setChambre(e.target.value)}
-          disabled={loading}
-        >
-          {CHAMBRES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+          <span className={styles.aiDot} />
+          {current.label}
+        </button>
+        <span className={styles.aiDesc}>{current.desc}</span>
       </div>
     </form>
   )
