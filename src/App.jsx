@@ -6,12 +6,14 @@ import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
 import LandingHero from './components/LandingHero'
 import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
+import styles from './App.module.css'
 
 export default function App() {
-  const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
-  const [results, setResults] = useState([])
-  const [groupStats, setGroupStats] = useState([])
+  const [resultsAN, setResultsAN] = useState([])
+  const [resultsSenat, setResultsSenat] = useState([])
+  const [loadingAN, setLoadingAN] = useState(false)
+  const [loadingSenat, setLoadingSenat] = useState(false)
   const [keywords, setKeywords] = useState([])
   const [lastQuery, setLastQuery] = useState('')
   const [error, setError] = useState(null)
@@ -26,47 +28,47 @@ export default function App() {
   const [activeDocView, setActiveDocView] = useState(null)
   const [parlIndex, setParlIndex] = useState({})
 
-  async function handleSearch({ query, orientation, chambre, useAI }) {
-    setLoading(true)
+  async function handleSearch({ query, orientation, useAI }) {
+    setLoadingAN(true)
+    setLoadingSenat(true)
     setError(null)
     setLastQuery(query)
     setActiveDocView(null)
 
     try {
-      const [{ keywords: kws, results: res }, allParls] = await Promise.all([
-        searchParlementaires({ query, orientation, chambre, useAI }),
+      const [[resAN, resSenat], allParls] = await Promise.all([
+        Promise.allSettled([
+          searchParlementaires({ query, orientation, chambre: 'AN', useAI }),
+          searchParlementaires({ query, orientation, chambre: 'Senat', useAI }),
+        ]),
         fetchAllParlementaires(),
       ])
-      setKeywords(kws)
-      setResults(res)
+
+      if (resAN.status === 'fulfilled') {
+        setKeywords(resAN.value.keywords)
+        setResultsAN(resAN.value.results)
+      } else {
+        setResultsAN([])
+      }
+      setLoadingAN(false)
+
+      if (resSenat.status === 'fulfilled') {
+        if (resAN.status !== 'fulfilled') setKeywords(resSenat.value.keywords)
+        setResultsSenat(resSenat.value.results)
+      } else {
+        setResultsSenat([])
+      }
+      setLoadingSenat(false)
+
       setSearched(true)
       setParlIndex(Object.fromEntries(allParls.map(p => [p.id, p])))
-
-      const totalScore = res.reduce((sum, p) => sum + (p.score ?? 0), 0)
-      const grouped = res.reduce((acc, p) => {
-        const key = p.groupe_sigle
-        if (!acc[key]) {
-          acc[key] = { sigle: p.groupe_sigle, libelle: p.groupe_libelle, couleur: p.couleur_groupe, totalScore: 0, count: 0 }
-        }
-        acc[key].totalScore += p.score ?? 0
-        acc[key].count += 1
-        return acc
-      }, {})
-      const groupStats = Object.values(grouped)
-        .map(g => ({
-          ...g,
-          avgScore: Math.round(g.totalScore / g.count),
-          pct: totalScore > 0 ? Math.round((g.totalScore / totalScore) * 100) : 0,
-        }))
-        .sort((a, b) => b.totalScore - a.totalScore)
-      setGroupStats(groupStats)
     } catch (err) {
       setError(err.message ?? 'Une erreur est survenue.')
-      setResults([])
+      setResultsAN([])
+      setResultsSenat([])
       setKeywords([])
-      setGroupStats([])
-    } finally {
-      setLoading(false)
+      setLoadingAN(false)
+      setLoadingSenat(false)
     }
   }
 
@@ -114,11 +116,13 @@ export default function App() {
     }
   }, [keywords])
 
+  const isLoading = loadingAN || loadingSenat
+
   return (
     <>
       <Header />
       <main>
-        <SearchBar onSearch={handleSearch} loading={loading} />
+        <SearchBar onSearch={handleSearch} loading={isLoading} />
         {error && (
           <div style={{
             maxWidth: 900, margin: '1rem auto 0', padding: '0 1.5rem',
@@ -129,24 +133,42 @@ export default function App() {
             {error}
           </div>
         )}
-        {searched && !loading && (
+        {searched && !isLoading && (
           <KeywordsDisplay keywords={keywords} query={lastQuery} />
         )}
-        {!searched && !loading && (
+        {!searched && !isLoading && (
           <LandingHero onSearch={handleSearch} />
         )}
-        <ResultsList
-          results={results}
-          groupStats={groupStats}
-          loading={loading}
-          searched={searched}
-          onSelectParlementaire={handleSelectParlementaire}
-          activeDocView={activeDocView}
-          onTotalClick={handleTotalClick}
-          onCloseDocView={() => setActiveDocView(null)}
-          parlIndex={parlIndex}
-          keywords={keywords}
-        />
+        {(searched || isLoading) && <div className={styles.biChambreLayout}>
+          <div className={styles.colonne}>
+            <h2 className={styles.colonneTitre}>Assemblée nationale</h2>
+            <ResultsList
+              results={resultsAN}
+              loading={loadingAN}
+              searched={searched}
+              onSelectParlementaire={handleSelectParlementaire}
+              activeDocView={activeDocView}
+              onTotalClick={handleTotalClick}
+              onCloseDocView={() => setActiveDocView(null)}
+              parlIndex={parlIndex}
+              keywords={keywords}
+            />
+          </div>
+          <div className={styles.colonne}>
+            <h2 className={styles.colonneTitre}>Sénat</h2>
+            <ResultsList
+              results={resultsSenat}
+              loading={loadingSenat}
+              searched={searched}
+              onSelectParlementaire={handleSelectParlementaire}
+              activeDocView={activeDocView}
+              onTotalClick={handleTotalClick}
+              onCloseDocView={() => setActiveDocView(null)}
+              parlIndex={parlIndex}
+              keywords={keywords}
+            />
+          </div>
+        </div>}
       </main>
       <AmendementPanel
         parlementaire={selectedParlementaire}

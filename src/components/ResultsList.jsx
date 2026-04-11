@@ -210,8 +210,28 @@ function GroupSummary({ groupStats, activeGroup, onFilter }) {
   )
 }
 
-export default function ResultsList({ results, groupStats, loading, searched, onSelectParlementaire, activeDocView, onTotalClick, onCloseDocView, parlIndex, keywords }) {
+export default function ResultsList({ results, loading, searched, onSelectParlementaire, activeDocView, onTotalClick, onCloseDocView, parlIndex, keywords }) {
   const [activeGroup, setActiveGroup] = useState(null)
+
+  const groupStats = useMemo(() => {
+    const totalScore = results.reduce((sum, p) => sum + (p.score ?? 0), 0)
+    const grouped = results.reduce((acc, p) => {
+      const key = p.groupe_sigle
+      if (!acc[key]) {
+        acc[key] = { sigle: p.groupe_sigle, libelle: p.groupe_libelle, couleur: p.couleur_groupe, totalScore: 0, count: 0 }
+      }
+      acc[key].totalScore += p.score ?? 0
+      acc[key].count += 1
+      return acc
+    }, {})
+    return Object.values(grouped)
+      .map(g => ({
+        ...g,
+        avgScore: Math.round(g.totalScore / g.count),
+        pct: totalScore > 0 ? Math.round((g.totalScore / totalScore) * 100) : 0,
+      }))
+      .sort((a, b) => b.totalScore - a.totalScore)
+  }, [results])
 
   const totals = useMemo(() => results.reduce((acc, p) => ({
     amendements: acc.amendements + (p.amendements_count ?? 0),
