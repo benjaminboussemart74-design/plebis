@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './AmendementPanel.module.css'
 import { getGroupeLogo } from '../lib/groupeLogos'
 import { supabase } from '../lib/supabase'
-import { SORT_LABEL, anUrl, amendNum, texteNum, texteUrl, formatDate, excerptAround, highlight as _highlight, fetchTexteMeta } from '../lib/panelUtils'
+import { SORT_LABEL, anUrl, amendNum, texteNum, texteUrl, formatDate, excerptAround, highlight as _highlight, fetchTexteMeta, seanceAnUrl } from '../lib/panelUtils'
 import { exportParlementaire } from '../lib/exportExcel'
 
 function highlight(text, keywords) {
@@ -70,7 +70,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
 
   useEffect(() => {
     if (!amendements.length) return
-    const refs = [...new Set(amendements.map(a => a.texte_legis_ref).filter(Boolean))]
+    const refs = [...new Set(amendements.map(a => a.texte_legis_ref).filter(r => r))]
     let cancelled = false
     Promise.all(refs.map(async ref => [ref, await fetchTexteMeta(ref)]))
       .then(entries => { if (!cancelled) setTexteMetas(Object.fromEntries(entries)) })
@@ -107,7 +107,10 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
 
   // ── Groupes interventions ────────────────────────────────
   const groupesInterventions = useMemo(() =>
-    makeGroups(interventions ?? [], i => i.point_titre || null, '__sans_point__'),
+    makeGroups(interventions ?? [], i => {
+      const t = i.point_titre
+      return (t && !/^p\.\s*\d/i.test(t)) ? t : null
+    }, '__sans_point__'),
   [interventions])
 
   // ── Groupes dossiers ─────────────────────────────────────
@@ -124,7 +127,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
 
     const { data, error } = await supabase
       .from('interventions')
-      .select('id, texte, point_titre')
+      .select('id, texte, point_titre, parlementaires(nom, prenom, groupe_sigle, couleur_groupe)')
       .gte('id', `${seanceUid}__`)
       .lt('id', `${seanceUid}~`)
       .order('id')
@@ -272,7 +275,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                               )}
                               {a.objet && (
                                 <div className={styles.section}>
-                                  <span className={styles.sectionLabel}>Texte amendé</span>
+                                  <span className={styles.sectionLabel}>Dispositif</span>
                                   <p className={styles.objet}>{highlight(a.objet, keywords)}</p>
                                 </div>
                               )}
@@ -325,9 +328,11 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                               </div>
                               <div className={styles.itemMeta}>
                                 {q.date_depot && <span className={styles.date}>{formatDate(q.date_depot)}</span>}
-                                <button className={styles.btnCR} onClick={() => openQuestionModal(q)}>
-                                  Lire
-                                </button>
+                                {q.texte_question && (
+                                  <button className={styles.btnCR} onClick={() => openQuestionModal(q)}>
+                                    Lire
+                                  </button>
+                                )}
                                 <a
                                   href={`https://www.assemblee-nationale.fr/dyn/17/questions/${q.id}`}
                                   target="_blank"
@@ -369,7 +374,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
             <ul className={styles.list}>
               {groupesInterventions.map(group => {
                 const collapsed = isCollapsed('interventions', group.key)
-                const label = group.key === '__sans_point__' ? 'Sans point à l\'ordre du jour' : group.key
+                const label = group.key === '__sans_point__' ? 'Séance plénière' : group.key
                 return (
                   <li key={group.key}>
                     <div
@@ -477,12 +482,22 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                 </span>
                 <span className={styles.modalTitle}>
                   {modal.type === 'seance'
-                    ? modal.point_titre || 'Séance plénière'
+                    ? (modal.point_titre && !/^p\.\s*\d/i.test(modal.point_titre) ? modal.point_titre : 'Séance plénière')
                     : modal.question.tete_analyse || modal.question.rubrique || 'Question'}
                 </span>
-                {modal.type === 'seance' && modal.date_seance && (
-                  <span className={styles.modalDate}>{formatDate(modal.date_seance)}</span>
-                )}
+                {modal.type === 'seance' && modal.date_seance && (() => {
+                  const seanceUrl = seanceAnUrl(modal.date_seance, modal.seanceUid)
+                  return (
+                    <div className={styles.modalSeanceRow}>
+                      <span className={styles.modalDate}>{formatDate(modal.date_seance)}</span>
+                      {seanceUrl && (
+                        <a href={seanceUrl} target="_blank" rel="noopener noreferrer" className={styles.modalSeanceLink}>
+                          Voir la séance ↗
+                        </a>
+                      )}
+                    </div>
+                  )
+                })()}
                 {modal.type === 'question' && modal.question.date_depot && (
                   <span className={styles.modalDate}>{formatDate(modal.question.date_depot)}</span>
                 )}
@@ -499,15 +514,26 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                 ) : (
                   modalItems.map(item => {
                     const isTarget = item.id === modal.interventionId
+                    const speaker = item.parlementaires
+                    const speakerColor = speaker?.couleur_groupe ?? '#9A9A92'
+                    const speakerName = speaker ? `${speaker.prenom} ${speaker.nom}` : 'Orateur'
+                    const speakerLogo = speaker?.groupe_sigle ? getGroupeLogo(speaker.groupe_sigle) : null
+                    const speakerSigle = speaker?.groupe_sigle
                     return (
                       <div
                         key={item.id}
                         ref={isTarget ? highlightRef : null}
                         className={`${styles.seanceItem} ${isTarget ? styles.seanceItemTarget : ''}`}
+                        style={{ '--speaker-color': speakerColor }}
                       >
-                        {isTarget && (
-                          <span className={styles.seanceItemLabel}>Intervention de {prenom} {nom}</span>
-                        )}
+                        <div className={styles.seanceSpeaker}>
+                          <span className={styles.seanceSpeakerName}>{speakerName}</span>
+                          {speakerLogo ? (
+                            <img src={speakerLogo} alt={speakerSigle} className={styles.seanceSpeakerLogo} />
+                          ) : speakerSigle ? (
+                            <span className={styles.seanceSpeakerBadge} style={{ background: speakerColor }}>{speakerSigle}</span>
+                          ) : null}
+                        </div>
                         <p className={styles.seanceTexte}>
                           {isTarget ? highlight(item.texte, keywords) : item.texte}
                         </p>

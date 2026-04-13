@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchTopAmendeurs, fetchTopQuestionneurs, fetchTopEfficaces } from '../lib/search'
 import { getGroupeLogo } from '../lib/groupeLogos'
+import ThemeNav from './ThemeNav'
+import { THEMES } from '../data/themes'
 import s from './LandingHero.module.css'
 
 const SUGGESTION_GROUPS = [
@@ -14,7 +16,7 @@ const STATS = [
   { value: 577,   label: 'députés' },
   { value: 99583, label: 'amendements' },
   { value: 12400, label: 'questions écrites' },
-  { value: 34700, label: 'interventions en séance' },
+  { value: 30000, label: 'interventions en séance' },
 ]
 
 function useCountUp(target, duration = 1600) {
@@ -239,6 +241,9 @@ export default function LandingHero({ onSearch }) {
 
   return (
     <div className={s.hero}>
+      {/* Navigation thématique */}
+      <ThemeNav themes={THEMES} onSearch={onSearch} />
+
       {/* Suggestions tournantes */}
       <div className={s.suggestionsSection}>
         <span className={s.suggestionsLabel}>Explorer&nbsp;:</span>

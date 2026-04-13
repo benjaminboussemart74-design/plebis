@@ -11,7 +11,8 @@
     "ingest": "node --max-old-space-size=4096 scripts/ingest.js",
     "ingest:cr": "node --max-old-space-size=4096 scripts/ingest-comptes-rendus.js",
     "ingest:dossiers": "node scripts/ingest-dossiers.js",
-    "ingest:senat": "node --max-old-space-size=4096 scripts/ingest-senat.js"
+    "ingest:senat": "node --max-old-space-size=4096 scripts/ingest-senat.js",
+    "ingest:amend-senat": "node scripts/ingest-amend-senat.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",

@@ -17,11 +17,13 @@ serve(async (req) => {
   const ref = url.searchParams.get('ref')
 
   try {
-    if (type === 'photo' && (id || url.searchParams.get('slug'))) {
-      const slug = url.searchParams.get('slug')
-      const photoUrl = slug
-        ? `https://www.nosdeputes.fr/depute/photo/${slug}/120`
-        : `https://www.assemblee-nationale.fr/dyn/static/tribun/${id}/photo`
+    if (type === 'photo' && id) {
+      const nom = url.searchParams.get('nom') ?? ''
+      const prenom = url.searchParams.get('prenom') ?? ''
+      const slugSenat = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+      const photoUrl = id.startsWith('SEN_')
+        ? `https://www.senat.fr/senimg/${slugSenat(nom)}_${slugSenat(prenom)}${id.replace('SEN_', '').toLowerCase()}_carre.jpg`
+        : `https://www.assemblee-nationale.fr/dyn/static/tribun/17/photos/carre/${id.replace('PA', '')}.jpg`
       const upstream = await fetch(photoUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'image/*,*/*' },
         redirect: 'follow',
@@ -60,7 +62,7 @@ serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ error: 'Paramètres invalides. Utiliser ?type=photo&id=PA... ou ?type=opendata&ref=...' }), {
+    return new Response(JSON.stringify({ error: 'Paramètres invalides. Utiliser ?type=photo&id=PA... (ou SEN_...) ou ?type=opendata&ref=...' }), {
       status: 400,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     })

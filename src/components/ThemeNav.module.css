@@ -1,0 +1,110 @@
+.root {
+  border: var(--border-light);
+  border-radius: 0;
+  margin-bottom: var(--space-6);
+  background: var(--color-bg-card);
+}
+
+/* ── En-tête ── */
+.header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-sidebar);
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+}
+
+/* ── Rangée de catégories ── */
+.catRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-card);
+}
+
+.catBtn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: var(--border-light);
+  border-radius: var(--radius-btn);
+  padding: 4px 10px;
+  margin: 3px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.catBtn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.catActive {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.catActive:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+/* ── Rangée de sous-thèmes ── */
+.subRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-accent-light);
+  animation: subIn 0.15s ease;
+}
+
+@keyframes subIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.subLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  white-space: nowrap;
+  margin-right: var(--space-1);
+}
+
+.subBtn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-accent);
+  background: none;
+  border: 1px solid #C0CFEA;
+  border-radius: var(--radius-btn);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.subBtn:hover {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}

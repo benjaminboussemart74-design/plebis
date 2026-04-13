@@ -18,7 +18,7 @@
 
 .groupBlock {
   flex: 0 0 auto;
-  min-width: 140px;
+  min-width: 155px;
   background: var(--color-bg-card);
   border: var(--border-light);
   border-top: none;
@@ -49,22 +49,30 @@
   background: var(--group-color, #9A9A92);
 }
 
+.groupLogoZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  background: var(--color-bg-sidebar);
+  margin: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3);
+}
+
 .groupLogo {
-  height: 28px;
-  width: auto;
-  max-width: 100%;
+  width: 90px;
+  height: 40px;
   object-fit: contain;
-  margin-top: var(--space-1);
-  margin-bottom: var(--space-1);
+  object-position: center;
 }
 
 .groupSigle {
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--color-text-primary);
-  letter-spacing: 0.02em;
-  margin-top: var(--space-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .groupStat {

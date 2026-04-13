@@ -4,8 +4,9 @@ import SearchBar from './components/SearchBar'
 import KeywordsDisplay from './components/KeywordsDisplay'
 import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
+import DocPanel from './components/DocPanel'
 import LandingHero from './components/LandingHero'
-import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
+import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires, fetchDocCounts } from './lib/search'
 import { expandQuery } from './lib/anthropic'
 import styles from './App.module.css'
 
@@ -28,6 +29,7 @@ export default function App() {
   // null | { type: 'amendements'|'questions'|'interventions'|'dossiers', data: [], loading: bool }
   const [activeDocView, setActiveDocView] = useState(null)
   const [parlIndex, setParlIndex] = useState({})
+  const [docCounts, setDocCounts] = useState({ amendements: 0, questions: 0, interventions: 0, dossiers: 0 })
 
   async function handleSearch({ query, orientation, useAI }) {
     setLoadingAN(true)
@@ -41,18 +43,20 @@ export default function App() {
       const kws = useAI ? await expandQuery(query) : [query]
       setKeywords(kws)
 
-      const [[resAN, resSenat], allParls] = await Promise.all([
+      const [[resAN, resSenat], allParls, counts] = await Promise.all([
         Promise.allSettled([
           searchParlementaires({ query, orientation, chambre: 'AN', keywords: kws }),
           searchParlementaires({ query, orientation, chambre: 'Senat', keywords: kws }),
         ]),
         fetchAllParlementaires(),
+        fetchDocCounts(kws),
       ])
 
       setResultsAN(resAN.status === 'fulfilled' ? resAN.value.results : [])
       setLoadingAN(false)
       setResultsSenat(resSenat.status === 'fulfilled' ? resSenat.value.results : [])
       setLoadingSenat(false)
+      setDocCounts(counts)
       setSearched(true)
       setParlIndex(Object.fromEntries(allParls.map(p => [p.id, p])))
     } catch (err) {
@@ -60,6 +64,7 @@ export default function App() {
       setResultsAN([])
       setResultsSenat([])
       setKeywords([])
+      setDocCounts({ amendements: 0, questions: 0, interventions: 0, dossiers: 0 })
       setLoadingAN(false)
       setLoadingSenat(false)
       setSearched(true)
@@ -67,19 +72,24 @@ export default function App() {
   }
 
   const handleTotalClick = useCallback(async (type) => {
+    // Toggle : clic sur le type actif ferme le panneau
+    if (activeDocView?.type === type && !activeDocView?.loading) {
+      setActiveDocView(null)
+      return
+    }
     setActiveDocView({ type, data: [], loading: true })
     setSelectedParlementaire(null)
     try {
       let data = []
-      if (type === 'amendements')    data = await fetchAmendements(null, keywords)
-      else if (type === 'questions') data = await fetchQuestionsEcrites(null, keywords)
+      if (type === 'amendements')        data = await fetchAmendements(null, keywords)
+      else if (type === 'questions')     data = await fetchQuestionsEcrites(null, keywords)
       else if (type === 'interventions') data = await fetchInterventions(null, keywords)
-      else if (type === 'dossiers')  data = await fetchDossiers(null, keywords)
+      else if (type === 'dossiers')      data = await fetchDossiers(null, keywords)
       setActiveDocView({ type, data, loading: false })
     } catch {
       setActiveDocView({ type, data: [], loading: false })
     }
-  }, [keywords])
+  }, [keywords, activeDocView])
 
   const handleSelectParlementaire = useCallback(async (parlementaire) => {
     setSelectedParlementaire(parlementaire)
@@ -173,6 +183,13 @@ export default function App() {
         keywords={keywords}
         loading={loadingAmendements}
         onClose={() => setSelectedParlementaire(null)}
+      />
+      <DocPanel
+        activeDocView={activeDocView}
+        docCounts={docCounts}
+        parlIndex={parlIndex}
+        keywords={keywords}
+        onClose={() => setActiveDocView(null)}
       />
     </>
   )
