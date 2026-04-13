@@ -156,20 +156,7 @@ export default function App() {
               onCloseDocView={() => setActiveDocView(null)}
               parlIndex={parlIndex}
               keywords={keywords}
-            />
-          </div>
-          <div className={styles.colonne}>
-            <h2 className={styles.colonneTitre}>Sénat</h2>
-            <ResultsList
-              results={resultsSenat}
-              loading={loadingSenat}
-              searched={searched}
-              onSelectParlementaire={handleSelectParlementaire}
-              activeDocView={activeDocView}
-              onTotalClick={handleTotalClick}
-              onCloseDocView={() => setActiveDocView(null)}
-              parlIndex={parlIndex}
-              keywords={keywords}
+              docCounts={docCounts}
             />
           </div>
         </div>}

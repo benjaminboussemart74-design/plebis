@@ -29,3 +29,4 @@ dist-ssr
 
 # Supabase CLI cache
 supabase/.temp/
+.vercel

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import ParlementaireCard from './ParlementaireCard'
 import styles from './ResultsList.module.css'
 import { getGroupeLogo } from '../lib/groupeLogos'
@@ -25,7 +25,7 @@ function GroupSummary({ groupStats, activeGroup, onFilter }) {
               }
             </div>
             <div className={styles.groupStat}>{g.count} député{g.count > 1 ? 's' : ''}</div>
-            <div className={styles.groupStat}>{g.totalScore} action{g.totalScore > 1 ? 's' : ''}</div>
+            <div className={styles.groupStat}>{Math.round(g.totalScore)} action{Math.round(g.totalScore) > 1 ? 's' : ''}</div>
             <div className={styles.groupStat}>{g.pct} % de l'activité</div>
             <button
               className={styles.groupFilterBtn}
@@ -44,8 +44,9 @@ function GroupSummary({ groupStats, activeGroup, onFilter }) {
   )
 }
 
-export default function ResultsList({ results, loading, searched, onSelectParlementaire, activeDocView, onTotalClick, onCloseDocView, parlIndex, keywords }) {
+export default function ResultsList({ results, loading, searched, onSelectParlementaire, activeDocView, onTotalClick, onCloseDocView, parlIndex, keywords, docCounts }) {
   const [activeGroup, setActiveGroup] = useState(null)
+  const activeDocType = activeDocView?.type ?? null
 
   const groupStats = useMemo(() => {
     const totalScore = results.reduce((sum, p) => sum + (p.score ?? 0), 0)

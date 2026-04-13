@@ -157,7 +157,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
   const qe = questionsEcrites ?? []
   const iv = interventions ?? []
   const doss = dossiers ?? []
-
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
@@ -416,7 +415,7 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
             </ul>
           </>
 
-        ) : (
+        ) : activeTab === 'dossiers' ? (
           <>
             <div className={styles.count}>
               {doss.length} dossier{doss.length !== 1 ? 's' : ''} législatif{doss.length !== 1 ? 's' : ''} sur cette thématique
@@ -467,7 +466,8 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
               })}
             </ul>
           </>
-        )}
+
+        ) : null}
       </aside>
 
       {/* ── Modale compte rendu / question complète ──────── */}

@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS amendements (
   legislature INT DEFAULT 17,
   texte_legis_ref TEXT,
   division_titre TEXT,
+  cosignataires_ids TEXT[] DEFAULT '{}',
   texte_recherche TSVECTOR GENERATED ALWAYS AS (
     to_tsvector('french',
       COALESCE(titre, '') || ' ' ||
@@ -47,6 +48,9 @@ CREATE INDEX IF NOT EXISTS idx_amendements_fts
 
 CREATE INDEX IF NOT EXISTS idx_amendements_trgm_objet
   ON amendements USING GIN(objet gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_amendements_cosignataires
+  ON amendements USING GIN(cosignataires_ids);
 
 CREATE INDEX IF NOT EXISTS idx_amendements_parlementaire
   ON amendements(parlementaire_id);
@@ -126,7 +130,9 @@ CREATE INDEX IF NOT EXISTS idx_dossiers_parlementaire
 CREATE OR REPLACE FUNCTION truncate_all()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  TRUNCATE TABLE dossiers_legislatifs, interventions, questions_ecrites, amendements, parlementaires RESTART IDENTITY CASCADE;
+  TRUNCATE TABLE dossiers_legislatifs, interventions,
+                 questions_ecrites, amendements, parlementaires
+  RESTART IDENTITY CASCADE;
 END;
 $$;
 
@@ -151,11 +157,12 @@ RETURNS TABLE (
   couleur_groupe TEXT,
   circonscription TEXT,
   photo_url TEXT,
-  score BIGINT,
+  score NUMERIC,
   amendements_count BIGINT,
   questions_count BIGINT,
   interventions_count BIGINT,
-  dossiers_count BIGINT
+  dossiers_count BIGINT,
+  cosignes_count BIGINT
 )
 LANGUAGE sql STABLE SECURITY DEFINER
 SET statement_timeout TO '30s'
@@ -189,22 +196,30 @@ AS $$
     FROM dossiers_legislatifs d, ts
     WHERE d.texte_recherche @@ ts.ts_query
     GROUP BY d.parlementaire_id
+  ),
+  scores_cosignes AS (
+    SELECT ref AS parlementaire_id, COUNT(*) AS cnt
+    FROM amendements a, ts, unnest(a.cosignataires_ids) AS ref
+    WHERE a.texte_recherche @@ ts.ts_query
+    GROUP BY ref
   )
   SELECT
     p.id, p.nom, p.prenom, p.chambre, p.groupe_sigle, p.groupe_libelle,
     p.orientation, p.couleur_groupe, p.circonscription, p.photo_url,
-    COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) + COALESCE(sd.cnt, 0) AS score,
+    COALESCE(sa.cnt,0) + COALESCE(sq.cnt,0) + COALESCE(si.cnt,0) + COALESCE(sd.cnt,0) + COALESCE(sc.cnt,0) * 0.3 AS score,
     COALESCE(sa.cnt, 0) AS amendements_count,
     COALESCE(sq.cnt, 0) AS questions_count,
     COALESCE(si.cnt, 0) AS interventions_count,
-    COALESCE(sd.cnt, 0) AS dossiers_count
+    COALESCE(sd.cnt, 0) AS dossiers_count,
+    COALESCE(sc.cnt, 0) AS cosignes_count
   FROM parlementaires p
   LEFT JOIN scores_amend sa ON sa.parlementaire_id = p.id
   LEFT JOIN scores_questions sq ON sq.parlementaire_id = p.id
   LEFT JOIN scores_interventions si ON si.parlementaire_id = p.id
   LEFT JOIN scores_dossiers sd ON sd.parlementaire_id = p.id
+  LEFT JOIN scores_cosignes sc ON sc.parlementaire_id = p.id
   WHERE
-    (COALESCE(sa.cnt, 0) + COALESCE(sq.cnt, 0) + COALESCE(si.cnt, 0) + COALESCE(sd.cnt, 0)) > 0
+    (COALESCE(sa.cnt,0) + COALESCE(sq.cnt,0) + COALESCE(si.cnt,0) + COALESCE(sd.cnt,0) + COALESCE(sc.cnt,0)) > 0
     AND (orientation_filter IS NULL OR p.orientation = orientation_filter)
     AND (chambre_filter IS NULL OR p.chambre = chambre_filter)
   ORDER BY score DESC

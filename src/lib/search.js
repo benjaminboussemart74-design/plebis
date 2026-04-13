@@ -142,6 +142,31 @@ export async function fetchDossiers(parlementaireId, keywords) {
 }
 
 /**
+ * Charge les amendements cosignés d'un parlementaire matchant les keywords courants.
+ */
+export async function fetchCosignes(parlementaireId, keywords) {
+  const tsQuery = buildTsQuery(keywords)
+
+  let query = supabase
+    .from('amendements')
+    .select('id, parlementaire_id, objet, expose_motifs, sort, date_depot, texte_legis_ref, division_titre')
+    .order('date_depot', { ascending: false })
+    .limit(500)
+
+  if (parlementaireId) {
+    query = query.contains('cosignataires_ids', [parlementaireId])
+  }
+
+  if (tsQuery) {
+    query = query.textSearch('texte_recherche', tsQuery, { config: 'french' })
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error('Erreur chargement amendements cosignés')
+  return data ?? []
+}
+
+/**
  * Charge les amendements d'un parlementaire matchant les keywords courants.
  */
 export async function fetchAmendements(parlementaireId, keywords) {
@@ -209,6 +234,7 @@ export async function searchParlementaires({ query, orientation, chambre, useAI 
       questions_count: Number(r.questions_count ?? 0),
       interventions_count: Number(r.interventions_count ?? 0),
       dossiers_count: Number(r.dossiers_count ?? 0),
+      cosignes_count: Number(r.cosignes_count ?? 0),
       scorePct: maxScore > 0 ? Math.round((Number(r.score) / maxScore) * 100) : 0,
     })),
   }
