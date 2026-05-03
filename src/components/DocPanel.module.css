@@ -1,0 +1,308 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(620px, 100vw);
+  background: var(--color-bg-card);
+  border-left: var(--border-medium);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-light);
+  background: var(--color-bg-sidebar);
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.typeLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-editorial);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--color-bg-card);
+  color: var(--color-text-muted);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--color-text-muted);
+  padding: var(--space-1);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+.close:hover { color: var(--color-text-primary); }
+
+/* ── Corps ── */
+.body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.loading,
+.empty {
+  padding: var(--space-8) var(--space-6);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ── Liste documents ── */
+.docList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.docItem {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.auteur {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.auteur::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: var(--auteur-color, #9A9A92);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.auteurGroupe {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.docRef {
+  font-size: 12px;
+}
+
+.docRefLink {
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.docRefLink:hover { text-decoration: underline; }
+
+.docRefLabel {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.docRefSub {
+  color: var(--color-text-muted);
+}
+
+.docMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.docTitre {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.docTitreWrap {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.docMetaRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.docDate {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.docLink {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+.docLink:hover { opacity: 0.7; }
+
+.docText {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.docTextMuted {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.docQuestionMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.docRubrique {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5A6A7A;
+  background: #EBF0F5;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.docMinistere {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.docProcedure {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  background: var(--color-bg-sidebar);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.sort {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.adopte { background: #d1fae5; color: var(--color-status-active); }
+.rejete { background: var(--color-editorial-light); color: var(--color-editorial); }
+.retire { background: #fef3c7; color: var(--color-status-pending); }
+.tombe  { background: var(--color-bg-sidebar); color: var(--color-status-archived); }
+
+.loadMore {
+  display: block;
+  width: 100%;
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  border-top: var(--border-light);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-accent);
+  cursor: pointer;
+  text-align: center;
+  transition: background var(--transition-fast);
+}
+.loadMore:hover { background: var(--color-accent-light); }
+
+.loadMoreCount {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.highlight {
+  background: #FFF3A3;
+  color: var(--color-text-primary);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}

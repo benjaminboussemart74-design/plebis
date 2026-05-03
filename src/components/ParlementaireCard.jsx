@@ -1,12 +1,10 @@
 import styles from './ParlementaireCard.module.css'
 import { getGroupeLogo } from '../lib/groupeLogos'
 
-const CHAMBRE_LABEL = { AN: 'Assemblée nationale', Senat: 'Sénat' }
-
 export default function ParlementaireCard({ parlementaire, rank, onClick }) {
   const {
-    nom, prenom, chambre, groupe_sigle, groupe_libelle,
-    couleur_groupe, circonscription, score, scorePct, photo_url,
+    nom, prenom, groupe_sigle, groupe_libelle,
+    couleur_groupe, circonscription, scorePct, photo_url,
     amendements_count, questions_count, interventions_count, dossiers_count,
   } = parlementaire
 
@@ -54,12 +52,12 @@ export default function ParlementaireCard({ parlementaire, rank, onClick }) {
           )}
         </div>
 
-        <div className={styles.meta}>
-          <span className={styles.chambre}>{CHAMBRE_LABEL[chambre] ?? chambre}</span>
-          {circonscription && (
-            <span className={styles.circ}> · {circonscription}</span>
-          )}
-        </div>
+        {circonscription && (
+          <div className={styles.meta}>
+            <span className={styles.metaLabel}>Député</span>
+            {' · '}{circonscription}
+          </div>
+        )}
 
         <div className={styles.scoreRow}>
           <div className={styles.scoreBar}>

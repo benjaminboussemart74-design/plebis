@@ -101,11 +101,11 @@ function RankingColumn({ title, methodology, items, metricFn, loading, onSeeAll 
         <div className={s.methodology}>&nbsp;</div>
         {[1, 2, 3].map(i => (
           <div key={i} className={s.podiumItem}>
-            <div className={`${s.skeleton}`} style={{ width: 18, height: 14 }} />
+            <div className={s.skeleton} style={{ width: 18, height: 14 }} />
             <div className={`${s.skeleton} ${s.photo}`} />
             <div className={s.info}>
-              <div className={`${s.skeleton}`} style={{ height: 13, width: '70%', marginBottom: 4 }} />
-              <div className={`${s.skeleton}`} style={{ height: 11, width: '40%' }} />
+              <div className={s.skeleton} style={{ height: 13, width: '70%', marginBottom: 4 }} />
+              <div className={s.skeleton} style={{ height: 11, width: '40%' }} />
             </div>
           </div>
         ))}
@@ -180,7 +180,6 @@ export default function LandingHero({ onSearch }) {
   const intervalRef = useRef(null)
   const fadeTimerRef = useRef(null)
 
-  // Rotation avec fondu : fade-out → swap → fade-in
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setFading(true)
@@ -239,7 +238,6 @@ export default function LandingHero({ onSearch }) {
 
   return (
     <div className={s.hero}>
-      {/* Suggestions tournantes */}
       <div className={s.suggestionsSection}>
         <span className={s.suggestionsLabel}>Explorer&nbsp;:</span>
         <div className={`${s.suggestionsGrid} ${fading ? s.suggestionsGridFading : ''}`}>
@@ -256,14 +254,12 @@ export default function LandingHero({ onSearch }) {
         </div>
       </div>
 
-      {/* Compteurs animés */}
       <div className={s.statsBar}>
         {STATS.map(({ value, label }) => (
           <StatItem key={label} value={value} label={label} />
         ))}
       </div>
 
-      {/* Classements */}
       <div className={s.rankingSection}>
         <div className={s.rankingTitle}>Classements — 17e législature</div>
         <div className={s.columns}>

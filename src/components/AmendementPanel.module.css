@@ -21,6 +21,7 @@
   overflow: hidden;
 }
 
+/* ── Header ── */
 .header {
   display: flex;
   align-items: center;
@@ -108,7 +109,7 @@
 }
 .close:hover { color: var(--color-text-primary); }
 
-/* ── Onglets ───────────────────────────────────────────── */
+/* ── Onglets ── */
 .tabs {
   display: flex;
   border-bottom: var(--border-light);
@@ -158,7 +159,7 @@
   color: var(--color-bg-card);
 }
 
-/* ── Compteur ──────────────────────────────────────────── */
+/* ── Compteur ── */
 .count {
   padding: var(--space-2) var(--space-5);
   font-family: var(--font-sans);
@@ -172,6 +173,7 @@
   flex-shrink: 0;
 }
 
+/* ── Liste ── */
 .list {
   list-style: none;
   margin: 0;
@@ -202,6 +204,15 @@
   color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
+}
+
+.dossierTitre {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  flex: 1;
 }
 
 .itemMeta {
@@ -271,11 +282,6 @@
 }
 .texteLink:hover { text-decoration: underline; }
 
-.texteNom {
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
 .divisionTitre {
   color: var(--color-text-muted);
 }
@@ -296,7 +302,7 @@
   font-style: normal;
 }
 
-/* ── Questions écrites ─────────────────────────────────── */
+/* ── Questions écrites ── */
 .questionMeta {
   display: flex;
   align-items: center;
@@ -306,18 +312,6 @@
   min-width: 0;
 }
 
-.rubrique {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #5A6A7A;
-  background: #EBF0F5;
-  padding: 2px 6px;
-  border-radius: 2px;
-}
-
 .ministere {
   font-family: var(--font-sans);
   font-size: 12px;
@@ -325,7 +319,7 @@
   font-style: italic;
 }
 
-/* ── Bouton compte rendu / lire ────────────────────────── */
+/* ── Bouton compte rendu / lire ── */
 .btnCR {
   font-family: var(--font-sans);
   font-size: 11px;
@@ -344,7 +338,45 @@
   color: var(--color-bg-card);
 }
 
-/* ── Modale ────────────────────────────────────────────── */
+/* ── Groupes par texte / rubrique / point / procédure ── */
+.groupHeader {
+  background: var(--color-bg-sidebar);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-light);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+.groupHeader:hover { background: var(--color-bg-hover); }
+
+.groupHeaderRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.groupChevron {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.groupStats {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  padding-left: calc(10px + var(--space-2));
+}
+
+/* ── Modale ── */
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -433,7 +465,7 @@
   border-left: var(--border-editorial);
 }
 
-/* ── Paragraphes du compte rendu ───────────────────────── */
+/* ── Paragraphes du compte rendu ── */
 .seanceItem {
   padding: var(--space-3) var(--space-5);
   border-bottom: var(--border-light);
@@ -477,63 +509,4 @@
 @keyframes modalIn {
   from { opacity: 0; transform: translate(-50%, -48%); }
   to   { opacity: 1; transform: translate(-50%, -50%); }
-}
-
-.procedureBadge {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #3A5A3A;
-  background: #E8F0E8;
-  padding: 2px 6px;
-  border-radius: 2px;
-}
-
-/* ── Groupes par texte / rubrique / point / procédure ──────── */
-.groupHeader {
-  background: var(--color-bg-sidebar);
-  padding: var(--space-3) var(--space-5);
-  border-top: var(--border-light);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  user-select: none;
-  transition: background var(--transition-fast);
-}
-.groupHeader:hover { background: var(--color-bg-hover); }
-
-.groupHeaderRow {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.groupChevron {
-  font-size: 10px;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.groupStats {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-text-muted);
-  margin-top: var(--space-1);
-  padding-left: calc(10px + var(--space-2));
-}
-
-.dossierTitre {
-  font-family: var(--font-serif);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  line-height: 1.4;
-  flex: 1;
 }

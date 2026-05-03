@@ -29,18 +29,12 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
   const [activeTab, setActiveTab] = useState('amendements')
   const [texteMetas, setTexteMetas] = useState({})
   const [collapsedGroups, setCollapsedGroups] = useState(new Set())
-
-  // État de la modale compte rendu / question
-  // null | { type: 'seance', interventionId, seanceUid, date_seance, point_titre }
-  //       | { type: 'question', question }
   const [modal, setModal] = useState(null)
   const [modalLoading, setModalLoading] = useState(false)
   const [modalItems, setModalItems] = useState([])
   const [modalError, setModalError] = useState(null)
   const highlightRef = useRef(null)
-  const modalRef = useRef(null) // pour le scroll auto après chargement
-
-  // Ref synchronisé pour l'état modal (utilisé dans le handler Escape)
+  const modalRef = useRef(null)
   const modalStateRef = useRef(null)
   useEffect(() => { modalStateRef.current = modal }, [modal])
 
@@ -50,7 +44,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     setCollapsedGroups(new Set())
   }, [parlementaire?.id])
 
-  // Fermeture par Échap : modale d'abord, puis panneau
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') {
@@ -90,7 +83,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     return collapsedGroups.has(`${tabKey}:${groupKey}`)
   }
 
-  // ── Groupes amendements ──────────────────────────────────
   const groupesAmendements = useMemo(() => {
     const groups = makeGroups(amendements, a => a.texte_legis_ref, '__sans_ref__')
     return groups.map(g => ({
@@ -100,17 +92,14 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
     }))
   }, [amendements, texteMetas])
 
-  // ── Groupes questions ────────────────────────────────────
   const groupesQuestions = useMemo(() =>
     makeGroups(questionsEcrites ?? [], q => q.rubrique || null, '__sans_rubrique__'),
   [questionsEcrites])
 
-  // ── Groupes interventions ────────────────────────────────
   const groupesInterventions = useMemo(() =>
     makeGroups(interventions ?? [], i => i.point_titre || null, '__sans_point__'),
   [interventions])
 
-  // ── Groupes dossiers ─────────────────────────────────────
   const groupesDossiers = useMemo(() =>
     makeGroups(dossiers ?? [], d => d.procedure_libelle || null, '__sans_procedure__'),
   [dossiers])
@@ -183,7 +172,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
           </div>
         </div>
 
-        {/* Onglets */}
         <div className={styles.tabs}>
           <button className={`${styles.tab} ${activeTab === 'amendements' ? styles.tabActive : ''}`} onClick={() => setActiveTab('amendements')}>
             Amendements
@@ -465,7 +453,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
         )}
       </aside>
 
-      {/* ── Modale compte rendu / question complète ──────── */}
       {modal && (
         <>
           <div className={styles.modalBackdrop} onClick={closeModal} />
@@ -516,7 +503,6 @@ export default function AmendementPanel({ parlementaire, amendements, questionsE
                   })
                 )
               ) : (
-                /* Question écrite complète */
                 <div className={styles.seanceItem}>
                   {modal.question.rubrique && (
                     <div className={styles.section}>

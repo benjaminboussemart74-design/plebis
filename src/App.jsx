@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import KeywordsDisplay from './components/KeywordsDisplay'
 import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
+import DocPanel from './components/DocPanel'
 import LandingHero from './components/LandingHero'
 import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
 import { expandQuery } from './lib/anthropic'
@@ -12,9 +13,7 @@ import styles from './App.module.css'
 export default function App() {
   const [searched, setSearched] = useState(false)
   const [resultsAN, setResultsAN] = useState([])
-  const [resultsSenat, setResultsSenat] = useState([])
   const [loadingAN, setLoadingAN] = useState(false)
-  const [loadingSenat, setLoadingSenat] = useState(false)
   const [keywords, setKeywords] = useState([])
   const [lastQuery, setLastQuery] = useState('')
   const [error, setError] = useState(null)
@@ -24,45 +23,54 @@ export default function App() {
   const [interventions, setInterventions] = useState([])
   const [dossiers, setDossiers] = useState([])
   const [loadingAmendements, setLoadingAmendements] = useState(false)
-
-  // null | { type: 'amendements'|'questions'|'interventions'|'dossiers', data: [], loading: bool }
   const [activeDocView, setActiveDocView] = useState(null)
   const [parlIndex, setParlIndex] = useState({})
+  const [docCounts, setDocCounts] = useState({ amendements: 0, questions: 0, interventions: 0, dossiers: 0 })
+
+  const docCountsComputed = useMemo(() =>
+    resultsAN.reduce((acc, p) => ({
+      amendements: acc.amendements + (p.amendements_count ?? 0),
+      questions: acc.questions + (p.questions_count ?? 0),
+      interventions: acc.interventions + (p.interventions_count ?? 0),
+      dossiers: acc.dossiers + (p.dossiers_count ?? 0),
+    }), { amendements: 0, questions: 0, interventions: 0, dossiers: 0 }),
+  [resultsAN])
 
   async function handleSearch({ query, orientation, useAI }) {
     setLoadingAN(true)
-    setLoadingSenat(true)
     setError(null)
     setLastQuery(query)
     setActiveDocView(null)
+    setSelectedParlementaire(null)
 
     try {
-      // Expansion IA une seule fois, partagée entre les deux chambres
       const kws = useAI ? await expandQuery(query) : [query]
       setKeywords(kws)
 
-      const [[resAN, resSenat], allParls] = await Promise.all([
-        Promise.allSettled([
-          searchParlementaires({ query, orientation, chambre: 'AN', keywords: kws }),
-          searchParlementaires({ query, orientation, chambre: 'Senat', keywords: kws }),
-        ]),
+      const [resAN, allParls] = await Promise.all([
+        searchParlementaires({ query, orientation, chambre: 'AN', keywords: kws }),
         fetchAllParlementaires(),
       ])
 
-      setResultsAN(resAN.status === 'fulfilled' ? resAN.value.results : [])
-      setLoadingAN(false)
-      setResultsSenat(resSenat.status === 'fulfilled' ? resSenat.value.results : [])
-      setLoadingSenat(false)
-      setSearched(true)
+      setResultsAN(resAN.results)
+      setDocCounts(
+        resAN.results.reduce((acc, p) => ({
+          amendements: acc.amendements + (p.amendements_count ?? 0),
+          questions: acc.questions + (p.questions_count ?? 0),
+          interventions: acc.interventions + (p.interventions_count ?? 0),
+          dossiers: acc.dossiers + (p.dossiers_count ?? 0),
+        }), { amendements: 0, questions: 0, interventions: 0, dossiers: 0 })
+      )
       setParlIndex(Object.fromEntries(allParls.map(p => [p.id, p])))
+      setSearched(true)
     } catch (err) {
       setError(err.message ?? 'Une erreur est survenue.')
       setResultsAN([])
-      setResultsSenat([])
+      setDocCounts({ amendements: 0, questions: 0, interventions: 0, dossiers: 0 })
       setKeywords([])
-      setLoadingAN(false)
-      setLoadingSenat(false)
       setSearched(true)
+    } finally {
+      setLoadingAN(false)
     }
   }
 
@@ -110,59 +118,31 @@ export default function App() {
     }
   }, [keywords])
 
-  const isLoading = loadingAN || loadingSenat
-
   return (
     <>
       <Header />
       <main>
-        <SearchBar onSearch={handleSearch} loading={isLoading} />
-        {error && (
-          <div style={{
-            maxWidth: 900, margin: '1rem auto 0', padding: '0 1.5rem',
-            color: 'var(--color-editorial)', fontSize: '13px',
-            background: 'var(--color-editorial-light)', border: 'var(--border-light)',
-            borderLeft: '3px solid var(--color-editorial)',
-          }}>
-            {error}
-          </div>
-        )}
-        {searched && !isLoading && (
+        <SearchBar onSearch={handleSearch} loading={loadingAN} />
+        {error && <div className={styles.error}>{error}</div>}
+        {searched && !loadingAN && (
           <KeywordsDisplay keywords={keywords} query={lastQuery} />
         )}
-        {!searched && !isLoading && (
+        {!searched && !loadingAN && (
           <LandingHero onSearch={handleSearch} />
         )}
-        {(searched || isLoading) && <div className={styles.biChambreLayout}>
-          <div className={styles.colonne}>
-            <h2 className={styles.colonneTitre}>Assemblée nationale</h2>
-            <ResultsList
-              results={resultsAN}
-              loading={loadingAN}
-              searched={searched}
-              onSelectParlementaire={handleSelectParlementaire}
-              activeDocView={activeDocView}
-              onTotalClick={handleTotalClick}
-              onCloseDocView={() => setActiveDocView(null)}
-              parlIndex={parlIndex}
-              keywords={keywords}
-            />
-          </div>
-          <div className={styles.colonne}>
-            <h2 className={styles.colonneTitre}>Sénat</h2>
-            <ResultsList
-              results={resultsSenat}
-              loading={loadingSenat}
-              searched={searched}
-              onSelectParlementaire={handleSelectParlementaire}
-              activeDocView={activeDocView}
-              onTotalClick={handleTotalClick}
-              onCloseDocView={() => setActiveDocView(null)}
-              parlIndex={parlIndex}
-              keywords={keywords}
-            />
-          </div>
-        </div>}
+        {(searched || loadingAN) && (
+          <ResultsList
+            results={resultsAN}
+            loading={loadingAN}
+            searched={searched}
+            onSelectParlementaire={handleSelectParlementaire}
+            activeDocView={activeDocView}
+            onTotalClick={handleTotalClick}
+            parlIndex={parlIndex}
+            keywords={keywords}
+            docCounts={docCounts}
+          />
+        )}
       </main>
       <AmendementPanel
         parlementaire={selectedParlementaire}
@@ -173,6 +153,12 @@ export default function App() {
         keywords={keywords}
         loading={loadingAmendements}
         onClose={() => setSelectedParlementaire(null)}
+      />
+      <DocPanel
+        activeDocView={activeDocView}
+        parlIndex={parlIndex}
+        keywords={keywords}
+        onClose={() => setActiveDocView(null)}
       />
     </>
   )
