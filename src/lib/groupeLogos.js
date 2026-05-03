@@ -9,8 +9,17 @@ import logoRN   from '../assets/Logos/Groupe_Rassemblement_national.png'
 import logoUDR  from '../assets/Logos/UDR_group_logo.png'
 import logoDR   from '../assets/Logos/La_Droite_Républicaine_logo_2024.png'
 import logoDem  from '../assets/Logos/groupe modem assemblée.png'
-
+// Sénat
+import logoCRC  from '../assets/Logos/CRCE-K logo sénat.webp'
+import logoGEST from '../assets/Logos/Groupe écologistes logo sénat.webp'
+import logoRDPI from '../assets/Logos/Sénat logo RDPI.webp'
+import logoRDSE from '../assets/Logos/RDSE logo sénat.webp'
+import logoRTLI from '../assets/Logos/Les indépendant logo sénat.webp'
+import logoUC   from '../assets/Logos/Sénat logo union centriste.webp'
+import logoLRSen from '../assets/Logos/Sénat logo les républicains.webp'
+import logoNI   from '../assets/Logos/Réunion admin logo sénat.webp'
 const LOGOS = {
+  // Assemblée nationale
   'LFI-NFP': logoLFI,
   'SOC':     logoSOC,
   'EcoS':    logoEcoS,
@@ -22,6 +31,15 @@ const LOGOS = {
   'UDR':     logoUDR,
   'DR':      logoDR,
   'Dem':     logoDem,
+  // Sénat
+  'CRC':     logoCRC,
+  'GEST':    logoGEST,
+  'LREM':    logoRDPI,
+  'RDSE':    logoRDSE,
+  'RTLI':    logoRTLI,
+  'UC':      logoUC,
+  'UMP':     logoLRSen,  // Sénat LR (sigle legacy — sera 'LR' après migration BDD)
+  'NI':      logoNI,
 }
 
 /**

@@ -6,7 +6,7 @@ import ResultsList from './components/ResultsList'
 import AmendementPanel from './components/AmendementPanel'
 import DocPanel from './components/DocPanel'
 import LandingHero from './components/LandingHero'
-import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires } from './lib/search'
+import { searchParlementaires, fetchAmendements, fetchQuestionsEcrites, fetchInterventions, fetchDossiers, fetchAllParlementaires, fetchDocCounts } from './lib/search'
 import { expandQuery } from './lib/anthropic'
 import styles from './App.module.css'
 
@@ -50,6 +50,7 @@ export default function App() {
       const [resAN, allParls] = await Promise.all([
         searchParlementaires({ query, orientation, chambre: 'AN', keywords: kws }),
         fetchAllParlementaires(),
+        fetchDocCounts(kws),
       ])
 
       setResultsAN(resAN.results)
@@ -75,19 +76,24 @@ export default function App() {
   }
 
   const handleTotalClick = useCallback(async (type) => {
+    // Toggle : clic sur le type actif ferme le panneau
+    if (activeDocView?.type === type && !activeDocView?.loading) {
+      setActiveDocView(null)
+      return
+    }
     setActiveDocView({ type, data: [], loading: true })
     setSelectedParlementaire(null)
     try {
       let data = []
-      if (type === 'amendements')    data = await fetchAmendements(null, keywords)
-      else if (type === 'questions') data = await fetchQuestionsEcrites(null, keywords)
+      if (type === 'amendements')        data = await fetchAmendements(null, keywords)
+      else if (type === 'questions')     data = await fetchQuestionsEcrites(null, keywords)
       else if (type === 'interventions') data = await fetchInterventions(null, keywords)
-      else if (type === 'dossiers')  data = await fetchDossiers(null, keywords)
+      else if (type === 'dossiers')      data = await fetchDossiers(null, keywords)
       setActiveDocView({ type, data, loading: false })
     } catch {
       setActiveDocView({ type, data: [], loading: false })
     }
-  }, [keywords])
+  }, [keywords, activeDocView])
 
   const handleSelectParlementaire = useCallback(async (parlementaire) => {
     setSelectedParlementaire(parlementaire)

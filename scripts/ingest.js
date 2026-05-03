@@ -250,9 +250,7 @@ async function parseAmendements(tmpPath, deputesSet) {
     const sortVal = cdv.sort?.['#text'] ?? cdv.sort?.value ?? cdv.sort ?? null
     const dateDepot = parseDate(cdv.dateDepot)
 
-    amendements.push({
-      id: uid,
-      parlementaire_id: acteurRef,
+    const sharedFields = {
       objet,
       expose_motifs: expose,
       sort: typeof sortVal === 'string' ? sortVal : null,
@@ -260,7 +258,21 @@ async function parseAmendements(tmpPath, deputesSet) {
       legislature: 17,
       texte_legis_ref: a.texteLegislatifRef ?? null,
       division_titre: a.pointeurFragmentTexte?.division?.titre ?? null,
-    })
+    }
+
+    // Cosignataires : signataires.cosignataires.acteurRef (string ou string[])
+    const cosignataires_ids = []
+    const cosigRaw = a.signataires?.cosignataires?.acteurRef
+    if (cosigRaw) {
+      const cosigArr = Array.isArray(cosigRaw) ? cosigRaw : [cosigRaw]
+      for (const ref of cosigArr) {
+        if (!ref || ref === acteurRef) continue
+        if (!deputesSet.has(ref)) continue
+        cosignataires_ids.push(ref)
+      }
+    }
+
+    amendements.push({ id: uid, parlementaire_id: acteurRef, cosignataires_ids, ...sharedFields })
 
     count++
     if (count % 5000 === 0) process.stdout.write(`    parsing… ${count} amendements\r`)
@@ -353,7 +365,8 @@ async function main() {
   console.log(' Parsing des amendements…')
   const { amendements, skipped } = await parseAmendements(amendTmp, deputesSet)
   unlinkSync(amendTmp)
-  console.log(`    ${amendements.length} amendements parsés (${skipped} ignorés)\n`)
+  const totalCosignes = amendements.reduce((s, a) => s + (a.cosignataires_ids?.length ?? 0), 0)
+  console.log(`    ${amendements.length} amendements parsés (${skipped} ignorés) — ${totalCosignes} cosignataires intégrés\n`)
 
   // ── 4. Questions écrites ──
   console.log(' Téléchargement des questions écrites…')

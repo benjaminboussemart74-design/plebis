@@ -44,6 +44,7 @@ function GroupSummary({ groupStats, activeGroup, onFilter }) {
 
 export default function ResultsList({ results, loading, searched, onSelectParlementaire, activeDocView, onTotalClick, parlIndex, keywords, docCounts }) {
   const [activeGroup, setActiveGroup] = useState(null)
+  const activeDocType = activeDocView?.type ?? null
 
   const groupStats = useMemo(() => {
     const totalScore = results.reduce((sum, p) => sum + (p.score ?? 0), 0)

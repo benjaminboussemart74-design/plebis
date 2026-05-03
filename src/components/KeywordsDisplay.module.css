@@ -18,6 +18,13 @@
   white-space: nowrap;
 }
 
+.queryWord {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
 .keyword {
   font-family: var(--font-sans);
   font-size: 11px;

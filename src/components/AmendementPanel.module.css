@@ -441,6 +441,22 @@
   color: var(--color-text-muted);
 }
 
+.modalSeanceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.modalSeanceLink {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+.modalSeanceLink:hover { opacity: 0.7; }
+
 .modalBody {
   overflow-y: auto;
   flex: 1;
@@ -467,25 +483,47 @@
 
 /* ── Paragraphes du compte rendu ── */
 .seanceItem {
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-5) var(--space-3) calc(var(--space-5) - 3px);
   border-bottom: var(--border-light);
+  border-left: 3px solid var(--speaker-color, #DDDDD6);
 }
 
 .seanceItemTarget {
   background: var(--color-accent-light);
-  border-left: 3px solid var(--color-accent);
-  padding-left: calc(var(--space-5) - 3px);
+  border-left-color: var(--color-accent);
 }
 
-.seanceItemLabel {
-  display: block;
+.seanceSpeaker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.seanceSpeakerName {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.seanceSpeakerLogo {
+  height: 14px;
+  width: auto;
+  max-width: 48px;
+  object-fit: contain;
+}
+
+.seanceSpeakerBadge {
   font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-accent);
-  margin-bottom: var(--space-2);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
 }
 
 .seanceTexte {

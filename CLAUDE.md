@@ -231,10 +231,35 @@ ANTHROPIC_API_KEY=<sk-ant-...>
 - [x] `panelUtils.jsx` : utilitaires mutualisés pour les vues documents (highlight, URL AN, formatDate, fetchTexteMeta)
 - [x] `AmendementPanel` : 4e onglet Dossiers
 - [x] Export Excel (`src/lib/exportExcel.js`) : bouton "Exporter Excel" dans le header du panneau — génère un `.xlsx` (SheetJS) avec 3 onglets (Amendements, Questions écrites, Interventions en séance), hyperliens AN cliquables, nom de fichier `plebis_{prenom}_{nom}_{YYYY-MM-DD}.xlsx`
+- [x] Phase 4a : données Sénat — **348 sénateurs** + **5 195 questions écrites** + **~100k interventions** (195 séances) ingérées via `scripts/ingest-senat.js`
+  - IDs sénateurs préfixés `SEN_` (ex: `SEN_08061X`)
+  - Groupes : `groupe.code` = sigle, `groupe.libelle` préfixé "Groupe " → normalisé par `normaliseGroupeLibelle()`
+  - `circonscription` est un objet `{code, libelle}` dans l'API → extraire `.libelle`
+  - CSV questions : ISO-8859-1, délimiteur `;`, pas de colonne matricule → matching par Nom+Prénom, date = "Date de publication JO" (format JJ/MM/AAAA)
+  - CRI XML : `<cri:intervenant mat="{matricule}" analyse="..." ...>` — parsing regex (HTML/XML mixte), date dans le nom de fichier `d{YYYYMMDD}.xml`
+  - Disque plein sur C: → variable `INGEST_TMP=/d/Temp` pour le ZIP de 511 Mo (`INGEST_TMP=/d/Temp node scripts/ingest-senat.js`)
+  - `panelUtils.jsx` : `senatUrl(id)` et `parlUrl(id, chambre)` ajoutés
 
 ### Reste à faire ⏳
+
+- [x] **Corrections frontend Sénat**
+  - `AmendementPanel.jsx` : lien "AN ↗" sur les questions conditionné sur `parlementaire.chambre !== 'Senat'` — les sénateurs n'ont pas de page question sur assemblee-nationale.fr
+  - `search.js` : `fetchTopQuestionneurs` filtre les résultats `id.startsWith('SEN_')` côté JS (fetch `lim+10` pour absorber les sénateurs éventuels)
+  - `LandingHero.jsx` : stats mises à jour — 925 parlementaires, 17 600 questions, 130 000 interventions
+  - Logos groupes : `groupeLogos.js` couvre uniquement les groupes AN → les sénateurs ont un fallback initiales colorées (acceptable en l'état, enrichir si souhaité)
+
+- [ ] Phase 4b : amendements Sénat (différé — complexité ingestion)
+  - La base Ameli complète est un dump PostgreSQL, non exploitable directement en streaming
+  - Les CSV par texte (`senat.fr/amendements/{session}/{num}/jeu_complet_…csv`) nécessitent
+    de connaître la liste des textes de la 17e législature au préalable (source : base Dosleg)
+  - Approche recommandée : télécharger `export_dosleg.zip` depuis `data.senat.fr/dosleg/`,
+    extraire les UIDs de textes de la 17e législature, puis itérer sur chaque texte
+    pour télécharger son CSV d'amendements
+  - Attention au biais de scoring : sans amendements Sénat, le score des sénateurs sera
+    structurellement plus bas que celui des députés dans les résultats sans filtre de chambre.
+    À documenter dans l'interface (infobulle ou mention dans les résultats).
+
 - [ ] Déploiement Vercel (frontend)
-- [ ] Phase 4 : données Sénat
 
 ---
 

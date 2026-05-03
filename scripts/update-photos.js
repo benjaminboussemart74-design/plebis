@@ -12,15 +12,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 )
 
-function slugify(str) {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+function slugSenat(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+}
+
+function photoUrl(id, prenom, nom) {
+  if (id.startsWith('SEN_')) {
+    const mat = id.replace('SEN_', '').toLowerCase()
+    return `https://www.senat.fr/senimg/${slugSenat(nom)}_${slugSenat(prenom)}${mat}_carre.jpg`
+  }
+  return `https://www.assemblee-nationale.fr/dyn/static/tribun/17/photos/carre/${id.replace('PA', '')}.jpg`
 }
 
 const { data, error } = await supabase
@@ -32,7 +33,7 @@ console.log(`${data.length} parlementaires…`)
 
 const updates = data.map(({ id, prenom, nom }) => ({
   id,
-  photo_url: `https://www.nosdeputes.fr/depute/photo/${slugify(prenom)}-${slugify(nom)}/120`,
+  photo_url: photoUrl(id, prenom, nom),
 }))
 
 // Updates en parallèle par batch de 20
